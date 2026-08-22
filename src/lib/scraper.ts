@@ -6,6 +6,33 @@ export interface ScrapeResult {
   error?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Fetch HTML via ScrapingAnt (residential proxy + JS rendering)
+// ---------------------------------------------------------------------------
+async function fetchViaScrapingAnt(targetUrl: string): Promise<string> {
+  const apiKey = process.env.SCRAPING_API_KEY;
+  if (!apiKey) throw new Error("SCRAPING_API_KEY non configurée.");
+
+  const endpoint =
+    `https://api.scrapingant.com/v2/general` +
+    `?url=${encodeURIComponent(targetUrl)}` +
+    `&x-api-key=${apiKey}` +
+    `&browser=true` +
+    `&proxy_type=residential`;
+
+  const res = await fetch(endpoint, { next: { revalidate: 0 } });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`ScrapingAnt ${res.status}: ${body.slice(0, 200)}`);
+  }
+
+  return res.text();
+}
+
+// ---------------------------------------------------------------------------
+// Main entry point
+// ---------------------------------------------------------------------------
 export async function scrapeListing(rawUrl: string): Promise<ScrapeResult> {
   if (!rawUrl || typeof rawUrl !== "string") {
     return { success: false, error: "URL invalide ou manquante." };
@@ -13,52 +40,169 @@ export async function scrapeListing(rawUrl: string): Promise<ScrapeResult> {
 
   const url = rawUrl.trim();
   const isLeboncoin = url.includes("leboncoin.fr");
-  const isAgriaffaires = url.includes("agriaffaires.com") || url.includes("agriaffaires.fr");
-
-  if (!isLeboncoin && !isAgriaffaires) {
-    // Si c'est un autre site, on essaye une extraction générique OpenGraph
-    return extractGenericMetadata(url);
-  }
+  const isAgriaffaires =
+    url.includes("agriaffaires.com") || url.includes("agriaffaires.fr");
 
   try {
-    // Tentative de fetch avec Headers réalistes
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 SiloBot/1.0",
-        "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-      },
-      next: { revalidate: 0 },
-    });
+    const html = await fetchViaScrapingAnt(url);
 
-    if (!response.ok) {
-      // Si bloqué par anti-bot (403/429) ou introuvable, on active l'extracteur heuristique intelligent
-      return fallbackHeuristicParser(url, isLeboncoin ? "leboncoin" : "agriaffaires");
+    if (isLeboncoin) {
+      return parseLeboncoin(url, html);
     }
 
-    const html = await response.text();
+    if (isAgriaffaires) {
+      return parseAgriaffaires(url, html);
+    }
 
-    // 1. Analyse JSON-LD ou Schema.org
-    const jsonLdMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/i);
-    if (jsonLdMatch && jsonLdMatch[1]) {
+    return parseGenericOg(url, html);
+  } catch (err) {
+    return {
+      success: false,
+      error:
+        err instanceof Error
+          ? err.message
+          : "Erreur lors de l'extraction de l'annonce.",
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Leboncoin — parses __NEXT_DATA__ embedded JSON
+// ---------------------------------------------------------------------------
+function parseLeboncoin(url: string, html: string): ScrapeResult {
+  const idx = html.indexOf("__NEXT_DATA__");
+  if (idx === -1) {
+    return {
+      success: false,
+      error: "Structure Leboncoin non reconnue (pas de __NEXT_DATA__).",
+    };
+  }
+
+  const start = html.indexOf(">", idx) + 1;
+  const end = html.indexOf("</script>", start);
+  if (start <= 0 || end === -1) {
+    return { success: false, error: "Impossible de lire __NEXT_DATA__." };
+  }
+
+  let pageData: Record<string, unknown>;
+  try {
+    const root = JSON.parse(html.substring(start, end));
+    pageData = (root?.props?.pageProps ?? {}) as Record<string, unknown>;
+  } catch {
+    return { success: false, error: "JSON __NEXT_DATA__ invalide." };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ad = pageData.ad as any;
+  if (!ad) {
+    return {
+      success: false,
+      error: "Aucune annonce trouvée dans les données Leboncoin.",
+    };
+  }
+
+  // Price is an array [number] on Leboncoin
+  const rawPrice: number = Array.isArray(ad.price)
+    ? (ad.price[0] ?? 0)
+    : (ad.price ?? 0);
+
+  // Location
+  const loc = ad.location ?? {};
+  const locationStr =
+    [loc.city, loc.zipcode].filter(Boolean).join(" ") || "France";
+
+  // Images — urls array
+  const images: string[] = (ad.images?.urls ?? []).filter(Boolean);
+
+  // Seller
+  const ownerName: string = ad.owner?.name ?? "";
+  const ownerType: string = ad.owner?.type ?? "private";
+  const sellerType = ownerType === "pro" ? "pro" : "particulier";
+
+  // Specs — only generic attributes that have both key_label and value_label
+  const specs: Record<string, string> = {};
+  if (Array.isArray(ad.attributes)) {
+    for (const attr of ad.attributes) {
+      if (attr.generic && attr.key_label && attr.value_label) {
+        specs[attr.key_label as string] = attr.value_label as string;
+      }
+    }
+  }
+
+  return {
+    success: true,
+    data: {
+      source: "leboncoin",
+      url,
+      title: ad.subject ?? "Annonce Leboncoin",
+      price: rawPrice,
+      currency: "EUR",
+      sellerName: ownerName || "Vendeur Leboncoin",
+      sellerType,
+      location: locationStr,
+      description: ad.body ?? "",
+      images,
+      specs,
+      publishedDate: new Date().toLocaleDateString("fr-FR"),
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Agriaffaires — JSON-LD Product schema then OpenGraph fallback
+// ---------------------------------------------------------------------------
+function parseAgriaffaires(url: string, html: string): ScrapeResult {
+  const jsonLdIdx = html.indexOf('"application/ld+json"');
+  if (jsonLdIdx !== -1) {
+    const start = html.indexOf(">", jsonLdIdx) + 1;
+    const end = html.indexOf("</script>", start);
+    if (start > 0 && end !== -1) {
       try {
-        const jsonLd = JSON.parse(jsonLdMatch[1]);
-        if (jsonLd["@type"] === "Product" || jsonLd.name || jsonLd.offers) {
-          const price = parseFloat(jsonLd.offers?.price || jsonLd.offers?.lowPrice || "0") || 0;
-          const images = Array.isArray(jsonLd.image) ? jsonLd.image : jsonLd.image ? [jsonLd.image] : [];
+        const jsonLd = JSON.parse(html.substring(start, end));
+        const product =
+          jsonLd["@type"] === "Product"
+            ? jsonLd
+            : Array.isArray(jsonLd)
+            ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              jsonLd.find((x: any) => x["@type"] === "Product")
+            : null;
+
+        if (product) {
+          const price =
+            parseFloat(
+              product.offers?.price ?? product.offers?.lowPrice ?? "0"
+            ) || 0;
+          const images: string[] = Array.isArray(product.image)
+            ? product.image
+            : product.image
+            ? [product.image]
+            : [];
+          const sellerName: string =
+            product.offers?.seller?.name ??
+            extractMeta(html, "og:site_name") ??
+            "Agriaffaires";
+
           return {
             success: true,
             data: {
-              source: isLeboncoin ? "leboncoin" : "agriaffaires",
+              source: "agriaffaires",
               url,
-              title: jsonLd.name || extractMeta(html, "og:title") || "Annonce détectée",
+              title: cleanTitle(
+                product.name ??
+                  extractMeta(html, "og:title") ??
+                  "Annonce Agriaffaires"
+              ),
               price,
-              currency: jsonLd.offers?.priceCurrency || "EUR",
-              sellerName: jsonLd.offers?.seller?.name || extractMeta(html, "author") || "Vendeur professionnel",
-              sellerType: jsonLd.offers?.seller?.name ? "pro" : "particulier",
-              location: extractMeta(html, "geo.placename") || extractLocationFromHtml(html),
-              description: jsonLd.description || extractMeta(html, "og:description"),
+              currency: product.offers?.priceCurrency ?? "EUR",
+              sellerName,
+              sellerType: "pro",
+              location:
+                extractMeta(html, "geo.placename") ??
+                extractLocationRegex(html),
+              description:
+                product.description ??
+                extractMeta(html, "og:description") ??
+                "",
               images: images.filter(Boolean),
               specs: extractSpecsFromHtml(html),
               publishedDate: new Date().toLocaleDateString("fr-FR"),
@@ -66,77 +210,86 @@ export async function scrapeListing(rawUrl: string): Promise<ScrapeResult> {
           };
         }
       } catch {
-        // Continue to regex/OpenGraph extraction
+        // fall through to OG
       }
     }
-
-    // 2. Analyse OpenGraph & Meta Tags
-    const ogTitle = extractMeta(html, "og:title") || extractTag(html, "title") || "";
-    const ogDesc = extractMeta(html, "og:description") || extractMeta(html, "description") || "";
-    const ogImage = extractMeta(html, "og:image");
-    
-    // Détection du prix par motif regex
-    const priceMatch =
-      html.match(/(\d[\d\s.,]{2,})\s*(?:€|EUR|euros?)/i) ||
-      ogTitle.match(/(\d[\d\s.,]{2,})\s*(?:€|EUR)/i) ||
-      ogDesc.match(/(\d[\d\s.,]{2,})\s*(?:€|EUR)/i);
-
-    let price = 0;
-    if (priceMatch && priceMatch[1]) {
-      const cleanPrice = priceMatch[1].replace(/\s/g, "").replace(",", ".");
-      price = parseFloat(cleanPrice) || 0;
-    }
-
-    const images: string[] = [];
-    if (ogImage && !ogImage.includes("placeholder") && !ogImage.includes("default")) {
-      images.push(ogImage);
-    }
-
-    // Chercher d'autres images dans le code HTML (galeries)
-    const imgMatches = html.matchAll(/https:\/\/[^"'\s]+?\.(?:jpg|jpeg|png|webp)/gi);
-    for (const match of imgMatches) {
-      const src = match[0];
-      if (
-        !images.includes(src) &&
-        images.length < 5 &&
-        (src.includes("leboncoin") || src.includes("agriaffaires") || src.includes("img") || src.includes("classifieds"))
-      ) {
-        images.push(src);
-      }
-    }
-
-    return {
-      success: true,
-      data: {
-        source: isLeboncoin ? "leboncoin" : "agriaffaires",
-        url,
-        title: cleanTitle(ogTitle) || (isLeboncoin ? "Annonce Leboncoin" : "Annonce Agriaffaires"),
-        price: price > 0 ? price : 0,
-        currency: "EUR",
-        sellerName: extractMeta(html, "author") || (isLeboncoin ? "Vendeur Leboncoin" : "Concessionnaire Agriaffaires"),
-        sellerType: html.includes("professionnel") || html.includes("Pro") ? "pro" : "particulier",
-        location: extractLocationFromHtml(html),
-        description: ogDesc,
-        images,
-        specs: extractSpecsFromHtml(html),
-        publishedDate: new Date().toLocaleDateString("fr-FR"),
-      },
-    };
-  } catch {
-    // Si échec réseau ou anti-bot, fallback intelligent basé sur les paramètres de l'URL
-    return fallbackHeuristicParser(url, isLeboncoin ? "leboncoin" : "agriaffaires");
   }
+
+  return parseGenericOg(url, html, "agriaffaires");
 }
 
-// Extraction de métadonnées génériques
-function extractMeta(html: string, name: string): string | null {
-  const reg = new RegExp(`<meta\\s+(?:name|property)=["']${name}["']\\s+content=["'](.*?)["']`, "i");
-  const match = html.match(reg);
-  if (match && match[1]) return decodeHtmlEntities(match[1].trim());
+// ---------------------------------------------------------------------------
+// Generic OpenGraph / meta extraction
+// ---------------------------------------------------------------------------
+function parseGenericOg(
+  url: string,
+  html: string,
+  source: ScrapedListingData["source"] = "autre"
+): ScrapeResult {
+  const ogTitle =
+    extractMeta(html, "og:title") ?? extractTag(html, "title") ?? "";
+  const ogDesc =
+    extractMeta(html, "og:description") ??
+    extractMeta(html, "description") ??
+    "";
+  const ogImage = extractMeta(html, "og:image");
 
-  const regReversed = new RegExp(`<meta\\s+content=["'](.*?)["']\\s+(?:name|property)=["']${name}["']`, "i");
-  const matchRev = html.match(regReversed);
-  if (matchRev && matchRev[1]) return decodeHtmlEntities(matchRev[1].trim());
+  const priceMatch =
+    html.match(/(\d[\d\s.,]{2,})\s*(?:€|EUR|euros?)/i) ??
+    ogTitle.match(/(\d[\d\s.,]{2,})\s*(?:€|EUR)/i) ??
+    ogDesc.match(/(\d[\d\s.,]{2,})\s*(?:€|EUR)/i);
+
+  let price = 0;
+  if (priceMatch?.[1]) {
+    price =
+      parseFloat(priceMatch[1].replace(/\s/g, "").replace(",", ".")) || 0;
+  }
+
+  const images: string[] = [];
+  if (
+    ogImage &&
+    !ogImage.includes("placeholder") &&
+    !ogImage.includes("default")
+  ) {
+    images.push(ogImage);
+  }
+
+  return {
+    success: true,
+    data: {
+      source,
+      url,
+      title: cleanTitle(ogTitle) || "Annonce web",
+      price,
+      currency: "EUR",
+      sellerName: extractMeta(html, "author") ?? "Vendeur",
+      sellerType: source === "agriaffaires" ? "pro" : "particulier",
+      location: extractLocationRegex(html),
+      description: ogDesc,
+      images,
+      specs: extractSpecsFromHtml(html),
+      publishedDate: new Date().toLocaleDateString("fr-FR"),
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+function extractMeta(html: string, name: string): string | null {
+  const reg1 = new RegExp(
+    `<meta\\s+(?:name|property)=["']${name}["']\\s+content=["'](.*?)["']`,
+    "i"
+  );
+  const m1 = html.match(reg1);
+  if (m1?.[1]) return decodeHtmlEntities(m1[1].trim());
+
+  const reg2 = new RegExp(
+    `<meta\\s+content=["'](.*?)["']\\s+(?:name|property)=["']${name}["']`,
+    "i"
+  );
+  const m2 = html.match(reg2);
+  if (m2?.[1]) return decodeHtmlEntities(m2[1].trim());
 
   return null;
 }
@@ -147,25 +300,26 @@ function extractTag(html: string, tag: string): string | null {
   return match ? decodeHtmlEntities(match[1].trim()) : null;
 }
 
-function extractLocationFromHtml(html: string): string {
-  const match = html.match(/([0-9]{2}\s*-\s*[A-Za-zÀ-ÿ\-]+)/i) || html.match(/([0-9]{5}\s+[A-Za-zÀ-ÿ\-]+)/i);
-  return match ? match[1] : "France";
+function extractLocationRegex(html: string): string {
+  const m =
+    html.match(/([0-9]{2}\s*-\s*[A-Za-zÀ-ÿ\-]+)/i) ??
+    html.match(/([0-9]{5}\s+[A-Za-zÀ-ÿ\-]+)/i);
+  return m ? m[1] : "France";
 }
 
 function extractSpecsFromHtml(html: string): Record<string, string> {
   const specs: Record<string, string> = {};
-  
-  // Heures
-  const hoursMatch = html.match(/(\d[\d\s]*)\s*(?:h|heures)/i);
-  if (hoursMatch) specs.hours = `${hoursMatch[1].trim()} h`;
 
-  // Année
-  const yearMatch = html.match(/(?:Année|Millésime)\s*[:]?\s*(20[0-2][0-9]|19[8-9][0-9])/i);
-  if (yearMatch) specs.year = yearMatch[1];
+  const hoursMatch = html.match(/(\d[\d\s]*)\s*(?:h\b|heures)/i);
+  if (hoursMatch) specs["Heures"] = `${hoursMatch[1].trim()} h`;
 
-  // Puissance
+  const yearMatch = html.match(
+    /(?:Année|Millésime)\s*[:]?\s*(20[0-2]\d|19[89]\d)/i
+  );
+  if (yearMatch) specs["Année"] = yearMatch[1];
+
   const powerMatch = html.match(/(\d{2,3})\s*(?:ch|cv|HP|chevaux)/i);
-  if (powerMatch) specs.power = `${powerMatch[1]} ch`;
+  if (powerMatch) specs["Puissance"] = `${powerMatch[1]} ch`;
 
   return specs;
 }
@@ -186,71 +340,4 @@ function decodeHtmlEntities(str: string): string {
     .replace(/&quot;/g, '"')
     .replace(/&#039;/g, "'")
     .replace(/&euro;/g, "€");
-}
-
-// Fallback prédictif et heuristique si anti-scraping actif sur le site tiers
-function fallbackHeuristicParser(url: string, source: "leboncoin" | "agriaffaires"): ScrapeResult {
-  try {
-    const urlObj = new URL(url);
-    const pathname = decodeURIComponent(urlObj.pathname);
-    const segments = pathname.split("/").filter(Boolean);
-    const lastSegment = segments[segments.length - 1] || "";
-    
-    // Tentative de déduction du titre à partir du slug d'URL
-    let inferredTitle = lastSegment
-      .replace(/\.html?$/i, "")
-      .replace(/\.htm$/i, "")
-      .replace(/^[0-9]+-/, "")
-      .replace(/-[0-9]+$/, "")
-      .replace(/[-_]/g, " ");
-
-    if (inferredTitle.length > 3) {
-      inferredTitle = inferredTitle.charAt(0).toUpperCase() + inferredTitle.slice(1);
-    } else {
-      inferredTitle = source === "leboncoin" ? "Annonce Leboncoin" : "Annonce Agriaffaires";
-    }
-
-    return {
-      success: true,
-      data: {
-        source,
-        url,
-        title: inferredTitle,
-        price: 0, // À compléter ou confirmer par l'utilisateur
-        currency: "EUR",
-        sellerName: source === "leboncoin" ? "Vendeur Leboncoin" : "Professionnel Agriaffaires",
-        sellerType: source === "agriaffaires" ? "pro" : "particulier",
-        location: "France",
-        description: "Annonce importée via Silo. Vous pouvez ajuster le prix ou les détails si nécessaire.",
-        images: [
-          "https://images.unsplash.com/photo-1592878904946-b3cd8ae243d0?auto=format&fit=crop&w=800&q=80"
-        ],
-        publishedDate: new Date().toLocaleDateString("fr-FR"),
-      },
-    };
-  } catch {
-    return {
-      success: false,
-      error: "Impossible d'analyser l'URL fournie.",
-    };
-  }
-}
-
-async function extractGenericMetadata(url: string): Promise<ScrapeResult> {
-  return {
-    success: true,
-    data: {
-      source: "autre",
-      url,
-      title: "Annonce Web externe",
-      price: 0,
-      currency: "EUR",
-      sellerName: "Vendeur externe",
-      sellerType: "autre",
-      location: "France",
-      description: `Lien de référence : ${url}`,
-      images: [],
-      publishedDate: new Date().toLocaleDateString("fr-FR"),
-    },
-  };
 }

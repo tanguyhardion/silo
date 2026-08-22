@@ -180,7 +180,7 @@ export default function ProductDetailPage({
                     </span>
                     <div className="flex items-baseline gap-2">
                       <span className="text-3xl sm:text-4xl font-black text-[#213B2F]">
-                        {formatCurrency(product.currentEstimatedValue, product.currency)}
+                        {product.currentEstimatedValue ? formatCurrency(product.currentEstimatedValue, product.currency) : "- €"}
                       </span>
                     </div>
                     <div className="mt-1 flex items-center gap-1.5 text-xs text-[#67726A]">
