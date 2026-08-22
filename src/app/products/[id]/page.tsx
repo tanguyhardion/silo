@@ -135,7 +135,7 @@ export default function ProductDetailPage({
               <img
                 src={
                   product.mainImageUrl ||
-                  "https://images.unsplash.com/photo-1592878904946-b3cd8ae243d0?auto=format&fit=crop&w=1200&q=80"
+                  "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80"
                 }
                 alt={product.name}
                 className="h-full w-full object-cover"
