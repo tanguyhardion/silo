@@ -333,11 +333,11 @@ export function AddListingModal({
             {/* Note / Analysis */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-[#67726A]">
-                Commentaire de comparaison
+                Note d&apos;analyse (Commentaire de comparaison)
               </label>
               <textarea
                 rows={2}
-                placeholder="Pourquoi cette preuve est-elle pertinente ? (Ex: Même gamme, bon point de comparaison...)"
+                placeholder="Pourquoi cette preuve est-elle pertinente ? (Ex: Même gamme d'options, bon point de comparaison...)"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="mt-1.5 w-full rounded-xl border border-[#DFD9CC] bg-white p-3 text-sm text-[#1E2721] placeholder-[#9BA59E] focus:border-[#213B2F] focus:outline-none"

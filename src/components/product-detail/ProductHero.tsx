@@ -1,12 +1,12 @@
 import { Product } from "@/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Calendar, Camera, Plus, Scale } from "lucide-react";
+import { Calendar, Pencil, Plus, Scale } from "lucide-react";
 
 interface ProductHeroProps {
   product: Product;
   avgListingPrice: number | null;
   validPricesCount: number;
-  onOpenEditImage: () => void;
+  onOpenEditProduct: () => void;
   onOpenValuationModal: () => void;
   onOpenListingModal: () => void;
 }
@@ -15,7 +15,7 @@ export function ProductHero({
   product,
   avgListingPrice,
   validPricesCount,
-  onOpenEditImage,
+  onOpenEditProduct,
   onOpenValuationModal,
   onOpenListingModal,
 }: ProductHeroProps) {
@@ -39,33 +39,51 @@ export function ProductHero({
             </span>
           </div>
 
-          {/* Edit Image Action Button */}
+          {/* Edit Product Action Button */}
           <button
-            onClick={onOpenEditImage}
-            title="Modifier la photo"
+            onClick={onOpenEditProduct}
+            title="Modifier le bien"
             className="absolute bottom-4 right-4 inline-flex items-center gap-1.5 rounded-xl bg-[#FCFBF8]/95 px-3 py-2 text-xs font-bold text-[#1E2721] shadow-md backdrop-blur-md border border-[#DFD9CC] hover:bg-[#213B2F] hover:text-[#F4F6F1] transition-all"
           >
-            <Camera className="h-4 w-4 text-[#C87D20]" />
-            <span>{product.mainImageUrl ? "Changer la photo" : "Ajouter une photo"}</span>
+            <Pencil className="h-4 w-4 text-[#C87D20]" />
+            <span>Modifier le bien</span>
           </button>
         </div>
 
         {/* Product Details & Actions */}
         <div className="flex flex-col justify-between p-6 sm:p-8 lg:col-span-7">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-[#C87D20]">
-                Fiche d&apos;Évaluation & Preuves
-              </span>
-              <span className="text-xs text-[#A8B3AC]">•</span>
-              <span className="text-xs text-[#67726A]">
-                Enregistré le {formatDate(product.createdAt)}
-              </span>
-            </div>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-[#C87D20]">
+                    Fiche d&apos;Évaluation & Preuves
+                  </span>
+                  <span className="text-xs text-[#A8B3AC]">•</span>
+                  <span className="text-xs text-[#67726A]">
+                    Enregistré le {formatDate(product.createdAt)}
+                  </span>
+                  {product.status === "archived" && (
+                    <span className="rounded-md bg-stone-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-stone-700">
+                      Archivé
+                    </span>
+                  )}
+                </div>
 
-            <h1 className="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1E2721]">
-              {product.name}
-            </h1>
+                <h1 className="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1E2721]">
+                  {product.name}
+                </h1>
+              </div>
+
+              <button
+                onClick={onOpenEditProduct}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#DFD9CC] bg-[#FCFBF8] px-3 py-2 text-xs font-bold text-[#1E2721] shadow-2xs hover:bg-[#EBE7DD] transition-all shrink-0"
+                title="Modifier les informations du bien"
+              >
+                <Pencil className="h-3.5 w-3.5 text-[#C87D20]" />
+                <span className="hidden sm:inline">Modifier</span>
+              </button>
+            </div>
 
             {product.description && (
               <p className="mt-3 text-sm leading-relaxed text-[#505A53]">

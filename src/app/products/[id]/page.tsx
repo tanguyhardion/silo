@@ -13,7 +13,7 @@ import {
   ProductListingsTab,
   ProductValuationsTab,
   ProductAuditTab,
-  EditProductImageModal,
+  EditProductModal,
   ProductDetailSkeleton,
   ProductNotFound,
   ProductTabType,
@@ -35,7 +35,7 @@ export default function ProductDetailPage({
 
   const [isValuationModalOpen, setIsValuationModalOpen] = useState(false);
   const [isListingModalOpen, setIsListingModalOpen] = useState(false);
-  const [isEditImageModalOpen, setIsEditImageModalOpen] = useState(false);
+  const [isEditProductModalOpen, setIsEditProductModalOpen] = useState(false);
 
   const loadData = async () => {
     try {
@@ -107,7 +107,7 @@ export default function ProductDetailPage({
           product={product}
           avgListingPrice={avgListingPrice}
           validPricesCount={validPrices.length}
-          onOpenEditImage={() => setIsEditImageModalOpen(true)}
+          onOpenEditProduct={() => setIsEditProductModalOpen(true)}
           onOpenValuationModal={() => setIsValuationModalOpen(true)}
           onOpenListingModal={() => setIsListingModalOpen(true)}
         />
@@ -124,8 +124,10 @@ export default function ProductDetailPage({
         {/* TAB CONTENTS */}
         {activeTab === "listings" && (
           <ProductListingsTab
+            productId={product.id}
             listings={listings}
             onAddListing={() => setIsListingModalOpen(true)}
+            onUpdate={loadData}
           />
         )}
 
@@ -159,12 +161,10 @@ export default function ProductDetailPage({
         onSuccess={loadData}
       />
 
-      <EditProductImageModal
-        productId={product.id}
-        productName={product.name}
-        currentImageUrl={product.mainImageUrl}
-        isOpen={isEditImageModalOpen}
-        onClose={() => setIsEditImageModalOpen(false)}
+      <EditProductModal
+        product={product}
+        isOpen={isEditProductModalOpen}
+        onClose={() => setIsEditProductModalOpen(false)}
         onSuccess={loadData}
       />
     </div>

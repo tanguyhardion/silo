@@ -47,3 +47,41 @@ export async function POST(
     return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
   }
 }
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const { listingId, notes, ...otherUpdates } = body;
+
+    if (!listingId) {
+      return NextResponse.json(
+        { success: false, error: "L'identifiant de la preuve (listingId) est obligatoire." },
+        { status: 400 }
+      );
+    }
+
+    const updatedListing = await dbService.updateListing(id, listingId, {
+      notes: notes !== undefined ? (notes?.trim() ? notes.trim() : null) : undefined,
+      ...otherUpdates,
+    });
+
+    if (!updatedListing) {
+      return NextResponse.json(
+        { success: false, error: "Preuve introuvable." },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true, listing: updatedListing });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: (error as Error).message },
+      { status: 500 }
+    );
+  }
+}
+

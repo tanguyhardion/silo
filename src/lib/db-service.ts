@@ -193,18 +193,34 @@ export const dbService = {
   },
 
   async updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
+    const now = new Date();
     if (db) {
+      const setObj: Record<string, unknown> = {
+        updatedAt: now,
+      };
+      if (updates.name !== undefined) setObj.name = updates.name;
+      if (updates.type !== undefined) setObj.type = updates.type;
+      if (updates.customType !== undefined) setObj.customType = updates.customType;
+      if (updates.description !== undefined) setObj.description = updates.description;
+      if (updates.mainImageUrl !== undefined) setObj.mainImageUrl = updates.mainImageUrl;
+      if (updates.status !== undefined) setObj.status = updates.status;
+      if (updates.currentEstimatedValue !== undefined) {
+        setObj.currentEstimatedValue = updates.currentEstimatedValue.toString();
+      }
+
       await db
         .update(products)
-        .set({
-          name: updates.name,
-          type: updates.type,
-          customType: updates.customType,
-          description: updates.description,
-          mainImageUrl: updates.mainImageUrl,
-          updatedAt: new Date(),
-        })
+        .set(setObj)
         .where(eq(products.id, id));
+
+      await db.insert(activityLogs).values({
+        id: `log-${Date.now()}`,
+        productId: id,
+        actionType: "PRODUCT_UPDATED",
+        description: `Mise à jour des informations du bien${updates.name ? ` (${updates.name})` : ""}.`,
+        actor: "Utilisateur Silo",
+        createdAt: now,
+      });
 
       return this.getProductById(id);
     }
@@ -214,8 +230,18 @@ export const dbService = {
     memoryProducts[index] = {
       ...memoryProducts[index],
       ...updates,
-      updatedAt: new Date().toISOString(),
+      updatedAt: now.toISOString(),
     };
+
+    memoryActivityLogs.unshift({
+      id: `log-${Date.now()}`,
+      productId: id,
+      actionType: "PRODUCT_UPDATED",
+      description: `Mise à jour des informations du bien${updates.name ? ` (${updates.name})` : ""}.`,
+      actor: "Utilisateur Silo",
+      createdAt: now.toISOString(),
+    });
+
     return memoryProducts[index];
   },
 
@@ -424,6 +450,76 @@ export const dbService = {
     });
 
     return newListing;
+  },
+
+  async updateListing(
+    productId: string,
+    listingId: string,
+    updates: Partial<Listing>
+  ): Promise<Listing | null> {
+    const now = new Date();
+    if (db) {
+      const setObj: Record<string, unknown> = {};
+      if (updates.notes !== undefined) setObj.notes = updates.notes;
+      if (updates.title !== undefined) setObj.title = updates.title;
+      if (updates.price !== undefined) setObj.price = updates.price.toString();
+      if (updates.sellerName !== undefined) setObj.sellerName = updates.sellerName;
+      if (updates.location !== undefined) setObj.location = updates.location;
+      if (updates.publishedDate !== undefined) setObj.publishedDate = updates.publishedDate;
+      if (updates.observedAt !== undefined) setObj.observedAt = updates.observedAt;
+      if (updates.description !== undefined) setObj.description = updates.description;
+      if (updates.status !== undefined) setObj.status = updates.status;
+      if (updates.specs !== undefined) setObj.specs = JSON.stringify(updates.specs);
+      if (updates.images !== undefined) setObj.images = JSON.stringify(updates.images);
+
+      if (Object.keys(setObj).length > 0) {
+        await db
+          .update(listings)
+          .set(setObj)
+          .where(eq(listings.id, listingId));
+      }
+
+      const existingListing = await db
+        .select()
+        .from(listings)
+        .where(eq(listings.id, listingId))
+        .limit(1);
+
+      const title = existingListing[0]?.title || "Preuve";
+
+      await db.insert(activityLogs).values({
+        id: `log-${Date.now()}`,
+        productId,
+        actionType: "LISTING_UPDATED",
+        description: `Mise à jour de la note d'analyse pour la preuve "${title}".`,
+        metadata: JSON.stringify({ listingId, notes: updates.notes }),
+        actor: "Utilisateur Silo",
+        createdAt: now,
+      });
+
+      const updatedList = await this.getListingsByProduct(productId);
+      return updatedList.find((l) => l.id === listingId) || null;
+    }
+
+    const index = memoryListings.findIndex((l) => l.id === listingId);
+    if (index === -1) return null;
+
+    memoryListings[index] = {
+      ...memoryListings[index],
+      ...updates,
+    };
+
+    memoryActivityLogs.unshift({
+      id: `log-${Date.now()}`,
+      productId,
+      actionType: "LISTING_UPDATED",
+      description: `Mise à jour de la note d'analyse pour la preuve "${memoryListings[index].title}".`,
+      metadata: { listingId, notes: updates.notes },
+      actor: "Utilisateur Silo",
+      createdAt: now.toISOString(),
+    });
+
+    return memoryListings[index];
   },
 
   // ACTIVITY LOGS
