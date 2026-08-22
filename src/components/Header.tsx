@@ -21,7 +21,7 @@ export function Header({ onOpenNewProductModal }: HeaderProps) {
               </span>
             </div>
             <p className="text-xs text-[#67726A] hidden sm:block font-medium">
-              Valorisation certifiée du patrimoine matériel
+              Valorisation du patrimoine matériel
             </p>
           </div>
         </Link>
