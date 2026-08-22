@@ -9,8 +9,16 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Silo — Valorisation & Preuves du Matériel Agricole",
+  title: {
+    default: "Silo",
+    template: "%s | Silo",
+  },
   description: "Plateforme moderne de valorisation de parcs agricoles et conservation de preuves de cotation (Leboncoin, Agriaffaires).",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

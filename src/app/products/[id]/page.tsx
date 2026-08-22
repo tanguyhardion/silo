@@ -60,6 +60,12 @@ export default function ProductDetailPage({
     loadData();
   }, [id]);
 
+  useEffect(() => {
+    if (product?.name) {
+      document.title = `${product.name} | Silo`;
+    }
+  }, [product]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F7F5F0] text-[#1E2721]">
