@@ -5,6 +5,7 @@ import { Listing } from "@/types";
 import { formatCurrency } from "@/lib/utils";
 import {
   Clock,
+  Calendar,
   ExternalLink,
   FileCheck,
   MapPin,
@@ -15,6 +16,7 @@ import {
   X,
   Loader2,
   FileText,
+  Gauge,
 } from "lucide-react";
 
 interface ProductListingsTabProps {
@@ -159,7 +161,31 @@ export function ProductListingsTab({
                         <span>{listing.location}</span>
                       </div>
                     )}
+                    {listing.publishedDate && (
+                      <div className="flex items-center gap-1.5 text-[11px] text-[#8C7D6B]">
+                        <Calendar className="h-3.5 w-3.5 shrink-0 text-[#8C7D6B]" />
+                        <span>Publiée par l&apos;annonceur le {listing.publishedDate}</span>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Specs & Characteristics (Heures, Km, Année, Puissance, etc.) */}
+                  {listing.specs && Object.keys(listing.specs).length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {Object.entries(listing.specs).map(([key, val]) => {
+                        if (!val || (typeof val !== "string" && typeof val !== "number")) return null;
+                        return (
+                          <span
+                            key={key}
+                            className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium bg-[#EBE7DD]/80 border border-[#DFD9CC] text-[#3D4740]"
+                          >
+                            <span className="text-[#67726A]">{key} :</span>
+                            <span className="font-semibold text-[#1E2721]">{String(val)}</span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
 
                   {/* Note d'analyse section */}
                   <div className="mt-3.5">

@@ -202,11 +202,26 @@ export function AddListingModal({
           </div>
 
           {successScrapeMsg && (
-            <div className="flex items-center gap-2 rounded-xl bg-[#3D7A5D]/10 border border-[#3D7A5D]/30 p-3 text-xs text-[#213B2F] animate-in fade-in">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-[#3D7A5D]" />
-              <span>
-                Données d&apos;annonce extraites avec succès ! Vérifiez et complétez les informations avant d&apos;enregistrer.
-              </span>
+            <div className="rounded-xl bg-[#3D7A5D]/10 border border-[#3D7A5D]/30 p-3.5 text-xs text-[#213B2F] space-y-2 animate-in fade-in">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-[#3D7A5D]" />
+                <span className="font-semibold">
+                  Données d&apos;annonce extraites avec succès !
+                </span>
+              </div>
+              {scrapedData?.specs && Object.keys(scrapedData.specs).length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {Object.entries(scrapedData.specs).map(([key, val]) => (
+                    <span
+                      key={key}
+                      className="inline-flex items-center gap-1 rounded-md bg-white/80 border border-[#3D7A5D]/20 px-2 py-0.5 text-[11px] font-medium text-[#213B2F]"
+                    >
+                      <span className="text-[#67726A]">{key}:</span>
+                      <strong>{String(val)}</strong>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

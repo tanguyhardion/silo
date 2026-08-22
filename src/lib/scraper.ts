@@ -67,6 +67,7 @@ export async function scrapeListing(rawUrl: string): Promise<ScrapeResult> {
 }
 
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 // Leboncoin — parses __NEXT_DATA__ embedded JSON
 // ---------------------------------------------------------------------------
 function parseLeboncoin(url: string, html: string): ScrapeResult {
@@ -119,15 +120,45 @@ function parseLeboncoin(url: string, html: string): ScrapeResult {
   const ownerType: string = ad.owner?.type ?? "private";
   const sellerType = ownerType === "pro" ? "pro" : "particulier";
 
-  // Specs — only generic attributes that have both key_label and value_label
+  // Specs — extract attributes (mileage, hours, year, fuel, gearbox, etc.)
   const specs: Record<string, string> = {};
   if (Array.isArray(ad.attributes)) {
     for (const attr of ad.attributes) {
-      if (attr.generic && attr.key_label && attr.value_label) {
+      if (attr.key_label && attr.value_label) {
         specs[attr.key_label as string] = attr.value_label as string;
+      } else if (attr.key && attr.value) {
+        const keyMap: Record<string, string> = {
+          mileage: "Kilométrage",
+          regdate: "Année-modèle",
+          fuel: "Carburant",
+          gearbox: "Boîte de vitesse",
+          doors: "Portes",
+          seats: "Places",
+          vehicle_type: "Type de véhicule",
+          horsepower: "Puissance DIN",
+          horse_power_fiscal: "Puissance fiscale",
+          hours: "Heures",
+          cylinder: "Cylindrée",
+        };
+        const label = keyMap[attr.key] || attr.key;
+        specs[label] = String(attr.value_label || attr.value);
       }
     }
   }
+
+  // Also check body/description for any missing hours/km/power
+  const bodySpecs = extractSpecsFromHtml(ad.body || "");
+  for (const [k, v] of Object.entries(bodySpecs)) {
+    if (!specs[k]) specs[k] = v;
+  }
+
+  // Original publication date
+  const rawPubDate =
+    ad.first_publication_date ||
+    ad.publication_date ||
+    ad.expiration_date ||
+    null;
+  const publishedDate = formatPubDate(rawPubDate) || new Date().toLocaleDateString("fr-FR");
 
   return {
     success: true,
@@ -143,7 +174,7 @@ function parseLeboncoin(url: string, html: string): ScrapeResult {
       description: ad.body ?? "",
       images,
       specs,
-      publishedDate: new Date().toLocaleDateString("fr-FR"),
+      publishedDate,
     },
   };
 }
@@ -182,6 +213,14 @@ function parseAgriaffaires(url: string, html: string): ScrapeResult {
             extractMeta(html, "og:site_name") ??
             "Agriaffaires";
 
+          const rawDate =
+            product.offers?.validFrom ||
+            product.releaseDate ||
+            product.datePosted ||
+            extractMeta(html, "article:published_time") ||
+            extractMeta(html, "og:article:published_time") ||
+            extractDateFromHtml(html);
+
           return {
             success: true,
             data: {
@@ -205,7 +244,7 @@ function parseAgriaffaires(url: string, html: string): ScrapeResult {
                 "",
               images: images.filter(Boolean),
               specs: extractSpecsFromHtml(html),
-              publishedDate: new Date().toLocaleDateString("fr-FR"),
+              publishedDate: formatPubDate(rawDate) || new Date().toLocaleDateString("fr-FR"),
             },
           };
         }
@@ -254,6 +293,13 @@ function parseGenericOg(
     images.push(ogImage);
   }
 
+  const rawDate =
+    extractMeta(html, "article:published_time") ??
+    extractMeta(html, "og:article:published_time") ??
+    extractMeta(html, "publication_date") ??
+    extractMeta(html, "date") ??
+    extractDateFromHtml(html);
+
   return {
     success: true,
     data: {
@@ -268,7 +314,7 @@ function parseGenericOg(
       description: ogDesc,
       images,
       specs: extractSpecsFromHtml(html),
-      publishedDate: new Date().toLocaleDateString("fr-FR"),
+      publishedDate: formatPubDate(rawDate) || new Date().toLocaleDateString("fr-FR"),
     },
   };
 }
@@ -307,19 +353,93 @@ function extractLocationRegex(html: string): string {
   return m ? m[1] : "France";
 }
 
+function formatPubDate(rawDate?: string | null): string | null {
+  if (!rawDate) return null;
+  const d = new Date(rawDate);
+  if (!isNaN(d.getTime())) {
+    return d.toLocaleDateString("fr-FR");
+  }
+  // Try matching DD/MM/YYYY or YYYY-MM-DD
+  const m1 = rawDate.match(/(\d{4})[-/.](\d{2})[-/.](\d{2})/);
+  if (m1) {
+    return `${m1[3]}/${m1[2]}/${m1[1]}`;
+  }
+  const m2 = rawDate.match(/(\d{2})[-/.](\d{2})[-/.](\d{4})/);
+  if (m2) {
+    return `${m2[1]}/${m2[2]}/${m2[3]}`;
+  }
+  return null;
+}
+
+function extractDateFromHtml(html: string): string | null {
+  // Matches "Publiée le 12/03/2024", "Mise en ligne le ...", "Date de publication : ..."
+  const m =
+    html.match(/(?:Publi[ée]e?|Mise en ligne|Date|Parue?)\s*(?:le\s*)?[:]?\s*(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})/i) ??
+    html.match(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/i);
+  return m ? m[1] : null;
+}
+
 function extractSpecsFromHtml(html: string): Record<string, string> {
   const specs: Record<string, string> = {};
 
-  const hoursMatch = html.match(/(\d[\d\s]*)\s*(?:h\b|heures)/i);
-  if (hoursMatch) specs["Heures"] = `${hoursMatch[1].trim()} h`;
+  // Hours (tractors, heavy equipment, harvesters, etc.)
+  const hoursMatch =
+    html.match(/(?:Heures?|Nb\.?\s*heures?)\s*[:]?\s*(\d[\d\s.,]*)\s*(?:h\b|heures)?/i) ??
+    html.match(/(\d[\d\s.,]*)\s*(?:h\b|heures)/i);
+  if (hoursMatch) {
+    const val = hoursMatch[1].trim().replace(/\s+/g, " ");
+    if (parseInt(val.replace(/\D/g, ""), 10) > 0) {
+      specs["Heures"] = `${val} h`;
+    }
+  }
 
-  const yearMatch = html.match(
-    /(?:Année|Millésime)\s*[:]?\s*(20[0-2]\d|19[89]\d)/i
-  );
-  if (yearMatch) specs["Année"] = yearMatch[1];
+  // Kilometers (utility vehicles, 4x4, trucks, cars, etc.)
+  const kmMatch =
+    html.match(/(?:Kilom[ée]trage|Km)\s*[:]?\s*(\d[\d\s.,]*)\s*(?:km\b|kilom[ée]tres)?/i) ??
+    html.match(/(\d[\d\s.,]*)\s*(?:km\b|kilom[ée]tres)/i);
+  if (kmMatch) {
+    const val = kmMatch[1].trim().replace(/\s+/g, " ");
+    if (parseInt(val.replace(/\D/g, ""), 10) > 0) {
+      specs["Kilométrage"] = `${val} km`;
+    }
+  }
 
-  const powerMatch = html.match(/(\d{2,3})\s*(?:ch|cv|HP|chevaux)/i);
-  if (powerMatch) specs["Puissance"] = `${powerMatch[1]} ch`;
+  // Year / Millésime
+  const yearMatch =
+    html.match(/(?:Ann[ée]e(?:\s*-\s*mod[èe]le)?|Mill[ée]sime)\s*[:]?\s*(20[0-2]\d|19[789]\d)/i) ??
+    html.match(/\b(20[0-2]\d|19[789]\d)\b/);
+  if (yearMatch && !specs["Année"] && !specs["Année-modèle"]) {
+    specs["Année"] = yearMatch[1];
+  }
+
+  // Power (ch, cv, HP)
+  const powerMatch =
+    html.match(/(?:Puissance|Puissance\s*DIN)\s*[:]?\s*(\d{2,4})\s*(?:ch|cv|hp|chevaux)?/i) ??
+    html.match(/(\d{2,4})\s*(?:ch|cv|HP|chevaux)\b/i);
+  if (powerMatch && !specs["Puissance"]) {
+    specs["Puissance"] = `${powerMatch[1]} ch`;
+  }
+
+  // Transmission / Gearbox
+  const gearboxMatch = html.match(/(?:Bo[îi]te(?:\s+de\s+vitesses?)?)\s*[:]?\s*(Manuelle|Automatique|Hydrostatique|Continue|Vario|Semi-powershift|Powershift)/i);
+  if (gearboxMatch && !specs["Boîte de vitesse"]) {
+    specs["Boîte de vitesse"] = gearboxMatch[1];
+  }
+
+  // Fuel / Carburant
+  const fuelMatch = html.match(/(?:Carburant|Énergie|Energie)\s*[:]?\s*(Diesel|Essence|Électrique|Electrique|Hybride|GNR)/i);
+  if (fuelMatch && !specs["Carburant"]) {
+    specs["Carburant"] = fuelMatch[1];
+  }
+
+  // Condition / État
+  const conditionMatch = html.match(/(?:[ÉE]tat|Condition)\s*[:]?\s*([A-Za-zÀ-ÿ\s]{3,25})(?:<|$|\n|,)/i);
+  if (conditionMatch && !specs["État"] && conditionMatch[1].trim().length < 25) {
+    const stateStr = conditionMatch[1].trim();
+    if (/bon|très bon|neuf|correct|moyen|reconditionné|usagé/i.test(stateStr)) {
+      specs["État"] = stateStr;
+    }
+  }
 
   return specs;
 }
