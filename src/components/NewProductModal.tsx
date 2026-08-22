@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ProductType } from "@/types";
-import { X, Sparkles, AlertCircle } from "lucide-react";
+import { X, Wheat, AlertCircle } from "lucide-react";
 
 interface NewProductModalProps {
   isOpen: boolean;
@@ -76,21 +76,26 @@ export function NewProductModal({ isOpen, onClose, onSuccess }: NewProductModalP
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-xs animate-in fade-in">
-      <div className="relative w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl border border-[#E2E5DC] sm:p-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-xs animate-in fade-in">
+      <div className="relative w-full max-w-xl rounded-3xl bg-[#FCFBF8] p-6 shadow-2xl border border-[#DFD9CC] sm:p-8">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#E2E5DC] pb-4">
-          <div>
-            <h2 className="text-xl font-bold text-[#18201B]">
-              Ajouter un nouveau bien
-            </h2>
-            <p className="mt-0.5 text-xs text-[#5C6960]">
-              Enregistrez un bien ou matériel dans votre parc Silo
-            </p>
+        <div className="flex items-center justify-between border-b border-[#DFD9CC] pb-4">
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl bg-[#EBE7DD] p-2 text-[#213B2F] border border-[#DFD9CC]">
+              <Wheat className="h-5 w-5 text-[#E0AF62]" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-[#1E2721]">
+                Enregistrer un nouveau bien
+              </h2>
+              <p className="text-xs text-[#67726A]">
+                Ajout d&apos;un matériel au patrimoine
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-[#5C6960] hover:bg-[#F0F2ED] hover:text-[#18201B] transition-colors"
+            className="rounded-lg p-2 text-[#67726A] hover:bg-[#EBE7DD] hover:text-[#1E2721] transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -99,7 +104,7 @@ export function NewProductModal({ isOpen, onClose, onSuccess }: NewProductModalP
         {/* Form */}
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           {error && (
-            <div className="flex items-center gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-700 border border-red-200">
+            <div className="flex items-center gap-2 rounded-xl bg-red-50 p-3 text-xs text-red-700 border border-red-200">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -108,7 +113,7 @@ export function NewProductModal({ isOpen, onClose, onSuccess }: NewProductModalP
           {/* Name & Type */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-[#18201B]">
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#67726A]">
                 Nom du bien *
               </label>
               <input
@@ -117,18 +122,18 @@ export function NewProductModal({ isOpen, onClose, onSuccess }: NewProductModalP
                 placeholder="Ex: John Deere 6155R, Fendt 724..."
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="mt-1.5 w-full rounded-xl border border-[#CBD5E1] px-3.5 py-2.5 text-sm text-[#18201B] placeholder-[#94A3B8] focus:border-[#1C3F30] focus:outline-none focus:ring-1 focus:ring-[#1C3F30]"
+                className="mt-1.5 w-full rounded-xl border border-[#DFD9CC] bg-white px-3.5 py-2.5 text-sm text-[#1E2721] placeholder-[#9BA59E] focus:border-[#213B2F] focus:outline-none focus:ring-1 focus:ring-[#213B2F]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[#18201B]">
-                Type de bien *
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#67726A]">
+                Catégorie *
               </label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value as ProductType)}
-                className="mt-1.5 w-full rounded-xl border border-[#CBD5E1] bg-white px-3.5 py-2.5 text-sm text-[#18201B] focus:border-[#1C3F30] focus:outline-none focus:ring-1 focus:ring-[#1C3F30]"
+                className="mt-1.5 w-full rounded-xl border border-[#DFD9CC] bg-white px-3.5 py-2.5 text-sm text-[#1E2721] focus:border-[#213B2F] focus:outline-none focus:ring-1 focus:ring-[#213B2F]"
               >
                 {PRODUCT_TYPES.map((t) => (
                   <option key={t} value={t}>
@@ -142,8 +147,8 @@ export function NewProductModal({ isOpen, onClose, onSuccess }: NewProductModalP
           {/* Custom Type if Autre */}
           {type === "Autre" && (
             <div>
-              <label className="block text-xs font-semibold text-[#18201B]">
-                Précisez le type *
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#67726A]">
+                Précisez la catégorie *
               </label>
               <input
                 type="text"
@@ -151,37 +156,37 @@ export function NewProductModal({ isOpen, onClose, onSuccess }: NewProductModalP
                 placeholder="Ex: Drone d'épandage, Chariot élévateur, Cuve à fioul..."
                 value={customType}
                 onChange={(e) => setCustomType(e.target.value)}
-                className="mt-1.5 w-full rounded-xl border border-[#CBD5E1] px-3.5 py-2.5 text-sm text-[#18201B] placeholder-[#94A3B8] focus:border-[#1C3F30] focus:outline-none"
+                className="mt-1.5 w-full rounded-xl border border-[#DFD9CC] bg-white px-3.5 py-2.5 text-sm text-[#1E2721] placeholder-[#9BA59E] focus:border-[#213B2F] focus:outline-none"
               />
             </div>
           )}
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-semibold text-[#18201B]">
+            <label className="block text-xs font-bold uppercase tracking-wider text-[#67726A]">
               Description (optionnel)
             </label>
             <textarea
               rows={3}
-              placeholder="Description générale, état, options ou remarques..."
+              placeholder="Description générale, état, équipements..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="mt-1.5 w-full rounded-xl border border-[#CBD5E1] px-3.5 py-2.5 text-sm text-[#18201B] placeholder-[#94A3B8] focus:border-[#1C3F30] focus:outline-none"
+              className="mt-1.5 w-full rounded-xl border border-[#DFD9CC] bg-white px-3.5 py-2.5 text-sm text-[#1E2721] placeholder-[#9BA59E] focus:border-[#213B2F] focus:outline-none"
             />
           </div>
 
-          {/* Initial Value & Reason */}
-          <div className="rounded-xl bg-[#F8FAF7] p-4 border border-[#E2E5DC] space-y-3">
+          {/* Initial Value */}
+          <div className="rounded-2xl bg-[#F7F5F0] p-4.5 border border-[#DFD9CC] space-y-3">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-[#D78A2E]" />
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#1C3F30]">
+              <span className="h-2 w-2 rounded-full bg-[#C87D20]" />
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[#213B2F]">
                 Première estimation de valeur
               </h4>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-[#18201B]">
+                <label className="block text-xs font-semibold text-[#67726A]">
                   Valeur estimée (€)
                 </label>
                 <div className="relative mt-1.5">
@@ -191,16 +196,16 @@ export function NewProductModal({ isOpen, onClose, onSuccess }: NewProductModalP
                     placeholder="Ex: 42000"
                     value={initialValue}
                     onChange={(e) => setInitialValue(e.target.value)}
-                    className="w-full rounded-xl border border-[#CBD5E1] bg-white px-3.5 py-2.5 pr-8 text-sm font-bold text-[#1C3F30] focus:border-[#1C3F30] focus:outline-none"
+                    className="w-full rounded-xl border border-[#DFD9CC] bg-white px-3.5 py-2.5 pr-8 text-base font-bold text-[#213B2F] focus:border-[#213B2F] focus:outline-none"
                   />
-                  <span className="absolute right-3 top-2.5 text-sm font-semibold text-[#5C6960]">
+                  <span className="absolute right-3 top-3 text-xs font-bold text-[#67726A]">
                     €
                   </span>
                 </div>
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-[#18201B]">
+                <label className="block text-xs font-semibold text-[#67726A]">
                   Justification / Note initiale
                 </label>
                 <input
@@ -208,7 +213,7 @@ export function NewProductModal({ isOpen, onClose, onSuccess }: NewProductModalP
                   placeholder="Ex: Prix d'achat, argus..."
                   value={initialValuationNotes}
                   onChange={(e) => setInitialValuationNotes(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-[#CBD5E1] bg-white px-3.5 py-2.5 text-sm text-[#18201B] placeholder-[#94A3B8] focus:border-[#1C3F30] focus:outline-none"
+                  className="mt-1.5 w-full rounded-xl border border-[#DFD9CC] bg-white px-3.5 py-2.5 text-sm text-[#1E2721] placeholder-[#9BA59E] focus:border-[#213B2F] focus:outline-none"
                 />
               </div>
             </div>
@@ -216,7 +221,7 @@ export function NewProductModal({ isOpen, onClose, onSuccess }: NewProductModalP
 
           {/* Photo URL */}
           <div>
-            <label className="block text-xs font-semibold text-[#18201B]">
+            <label className="block text-xs font-bold uppercase tracking-wider text-[#67726A]">
               URL d&apos;une photo principale (optionnel)
             </label>
             <input
@@ -224,25 +229,25 @@ export function NewProductModal({ isOpen, onClose, onSuccess }: NewProductModalP
               placeholder="https://images.unsplash.com/..."
               value={mainImageUrl}
               onChange={(e) => setMainImageUrl(e.target.value)}
-              className="mt-1.5 w-full rounded-xl border border-[#CBD5E1] px-3.5 py-2.5 text-sm text-[#18201B] placeholder-[#94A3B8] focus:border-[#1C3F30] focus:outline-none"
+              className="mt-1.5 w-full rounded-xl border border-[#DFD9CC] bg-white px-3.5 py-2.5 text-sm text-[#1E2721] placeholder-[#9BA59E] focus:border-[#213B2F] focus:outline-none"
             />
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#E2E5DC]">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#DFD9CC]">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-[#CBD5E1] px-4 py-2.5 text-sm font-medium text-[#5C6960] hover:bg-[#F0F2ED] transition-colors"
+              className="rounded-xl border border-[#DFD9CC] px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-[#67726A] hover:bg-[#EBE7DD] transition-colors"
             >
               Annuler
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="rounded-xl bg-[#1C3F30] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#25523F] disabled:opacity-50 transition-all active:scale-95"
+              className="rounded-xl bg-[#213B2F] px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-[#F4F6F1] shadow-sm hover:bg-[#2C4E3E] disabled:opacity-50 transition-all active:scale-95"
             >
-              {loading ? "Création en cours..." : "Créer le bien"}
+              {loading ? "Enregistrement..." : "Enregistrer le bien"}
             </button>
           </div>
         </form>

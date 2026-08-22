@@ -1,6 +1,6 @@
 import React from "react";
 import { formatCurrency } from "@/lib/utils";
-import { Package, ShieldCheck, History } from "lucide-react";
+import { ShieldCheck, Tractor, Scale, BookmarkCheck } from "lucide-react";
 
 interface StatsCardsProps {
   totalProducts: number;
@@ -18,81 +18,81 @@ export function StatsCards({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {/* Total Parc */}
-      <div className="relative overflow-hidden rounded-2xl border border-[#E2E5DC] bg-white p-5 shadow-xs transition-all hover:shadow-md">
+      <div className="relative overflow-hidden rounded-2xl border border-[#DFD9CC] bg-[#FCFBF8] p-5.5 shadow-xs transition-all hover:border-[#C8BFAD] hover:shadow-sm">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#5C6960]">
-            Valeur du Parc
+          <span className="text-[11px] font-bold uppercase tracking-widest text-[#67726A]">
+            Valeur du Parc Agricole
           </span>
-          <div className="rounded-xl bg-[#E8EAE2] p-2.5 text-[#1C3F30]">
-            <ShieldCheck className="h-5 w-5" />
+          <div className="rounded-xl bg-[#EBE7DD] p-2 text-[#213B2F] border border-[#DFD9CC]">
+            <Scale className="h-4.5 w-4.5 text-[#213B2F]" />
           </div>
         </div>
         <div className="mt-3">
-          <div className="text-2xl font-bold tracking-tight text-[#18201B]">
+          <div className="text-3xl font-extrabold tracking-tight text-[#1E2721]">
             {formatCurrency(totalEstimatedValue)}
           </div>
-          <p className="mt-1 text-xs text-[#5C6960]">
-            Cote globale actuelle consolidée
+          <p className="mt-1 text-xs text-[#67726A]">
+            Cote consolidée des actifs
           </p>
         </div>
       </div>
 
       {/* Matériels Actifs */}
-      <div className="relative overflow-hidden rounded-2xl border border-[#E2E5DC] bg-white p-5 shadow-xs transition-all hover:shadow-md">
+      <div className="relative overflow-hidden rounded-2xl border border-[#DFD9CC] bg-[#FCFBF8] p-5.5 shadow-xs transition-all hover:border-[#C8BFAD] hover:shadow-sm">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#5C6960]">
+          <span className="text-[11px] font-bold uppercase tracking-widest text-[#67726A]">
             Biens & Matériels
           </span>
-          <div className="rounded-xl bg-[#E8EAE2] p-2.5 text-[#1C3F30]">
-            <Package className="h-5 w-5" />
+          <div className="rounded-xl bg-[#EBE7DD] p-2 text-[#213B2F] border border-[#DFD9CC]">
+            <Tractor className="h-4.5 w-4.5 text-[#213B2F]" />
           </div>
         </div>
         <div className="mt-3">
-          <div className="text-2xl font-bold tracking-tight text-[#18201B]">
+          <div className="text-3xl font-extrabold tracking-tight text-[#1E2721]">
             {totalProducts}
           </div>
-          <p className="mt-1 text-xs text-[#5C6960]">
-            Tracteurs, machines et équipements
+          <p className="mt-1 text-xs text-[#67726A]">
+            Tracteurs, outils et équipements
           </p>
         </div>
       </div>
 
-      {/* Preuves / Annonces enregistrées */}
-      <div className="relative overflow-hidden rounded-2xl border border-[#E2E5DC] bg-white p-5 shadow-xs transition-all hover:shadow-md">
+      {/* Preuves archivées */}
+      <div className="relative overflow-hidden rounded-2xl border border-[#DFD9CC] bg-[#FCFBF8] p-5.5 shadow-xs transition-all hover:border-[#C8BFAD] hover:shadow-sm">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#5C6960]">
-            Preuves de Marché
+          <span className="text-[11px] font-bold uppercase tracking-widest text-[#67726A]">
+            Preuves Marché Réelles
           </span>
-          <div className="rounded-xl bg-[#FEF3C7] p-2.5 text-[#92400E]">
-            <span className="font-bold text-xs">LBC / AGRI</span>
+          <div className="rounded-xl bg-[#F6EFE2] p-2 text-[#995E15] border border-[#E9DCBF]">
+            <BookmarkCheck className="h-4.5 w-4.5 text-[#C87D20]" />
           </div>
         </div>
         <div className="mt-3">
-          <div className="text-2xl font-bold tracking-tight text-[#18201B]">
+          <div className="text-3xl font-extrabold tracking-tight text-[#1E2721]">
             {totalListings}
           </div>
-          <p className="mt-1 text-xs text-[#5C6960]">
-            Annonces observées et horodatées
+          <p className="mt-1 text-xs text-[#67726A]">
+            Annonces observées et archivées
           </p>
         </div>
       </div>
 
-      {/* Historique d'estimations */}
-      <div className="relative overflow-hidden rounded-2xl border border-[#E2E5DC] bg-white p-5 shadow-xs transition-all hover:shadow-md">
+      {/* Traçabilité */}
+      <div className="relative overflow-hidden rounded-2xl border border-[#DFD9CC] bg-[#FCFBF8] p-5.5 shadow-xs transition-all hover:border-[#C8BFAD] hover:shadow-sm">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#5C6960]">
-            Traçabilité & Historique
+          <span className="text-[11px] font-bold uppercase tracking-widest text-[#67726A]">
+            Historique & Actes
           </span>
-          <div className="rounded-xl bg-[#E8EAE2] p-2.5 text-[#1C3F30]">
-            <History className="h-5 w-5" />
+          <div className="rounded-xl bg-[#EBE7DD] p-2 text-[#213B2F] border border-[#DFD9CC]">
+            <ShieldCheck className="h-4.5 w-4.5 text-[#213B2F]" />
           </div>
         </div>
         <div className="mt-3">
-          <div className="text-2xl font-bold tracking-tight text-[#18201B]">
+          <div className="text-3xl font-extrabold tracking-tight text-[#1E2721]">
             {totalValuations}
           </div>
-          <p className="mt-1 text-xs text-[#5C6960]">
-            Valorisations certifiées au journal
+          <p className="mt-1 text-xs text-[#67726A]">
+            Valorisations enregistrées au registre
           </p>
         </div>
       </div>
