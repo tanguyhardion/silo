@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { getTodayFormatted } from "@/lib/utils";
+import { getTodayFormatted, extractUrl } from "@/lib/utils";
 import {
   X,
   Link as LinkIcon,
@@ -46,10 +46,39 @@ export function AddListingModal({
 
   if (!isOpen) return null;
 
+  const handleUrlChange = (value: string) => {
+    const extracted = extractUrl(value);
+    if (
+      extracted &&
+      extracted !== value &&
+      (value.includes("http://") || value.includes("https://") || value.includes("www."))
+    ) {
+      setUrl(extracted);
+    } else {
+      setUrl(value);
+    }
+  };
+
+  const handleUrlPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pastedText = e.clipboardData.getData("text");
+    if (pastedText) {
+      const extracted = extractUrl(pastedText);
+      if (extracted && extracted !== pastedText) {
+        e.preventDefault();
+        setUrl(extracted);
+      }
+    }
+  };
+
   const handleScrape = async () => {
-    if (!url.trim()) {
+    const cleanUrl = extractUrl(url);
+    if (!cleanUrl) {
       setError("Veuillez coller une URL Leboncoin ou Agriaffaires.");
       return;
+    }
+
+    if (cleanUrl !== url) {
+      setUrl(cleanUrl);
     }
 
     setScraping(true);
@@ -60,7 +89,7 @@ export function AddListingModal({
       const res = await fetch("/api/scrape", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: url.trim() }),
+        body: JSON.stringify({ url: cleanUrl }),
       });
 
       const data = await res.json();
@@ -88,7 +117,8 @@ export function AddListingModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url.trim() || !title.trim()) {
+    const cleanUrl = extractUrl(url);
+    if (!cleanUrl || !title.trim()) {
       setError("L'URL et le titre de l'annonce sont requis.");
       return;
     }
@@ -102,7 +132,7 @@ export function AddListingModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           source,
-          url: url.trim(),
+          url: cleanUrl,
           title: title.trim(),
           price: parseFloat(price) || 0,
           currency: "EUR",
@@ -133,10 +163,10 @@ export function AddListingModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-xs animate-in fade-in">
-      <div className="relative w-full max-w-2xl rounded-3xl bg-[#FCFBF8] p-6 shadow-2xl border border-[#DFD9CC] sm:p-8 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in">
+      <div className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl bg-[#FCFBF8] shadow-2xl border border-[#DFD9CC] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#DFD9CC] pb-4">
+        <div className="flex items-center justify-between border-b border-[#DFD9CC] px-6 py-5 sm:px-8 shrink-0 bg-[#FCFBF8]">
           <div className="flex items-center gap-3">
             <div className="rounded-xl bg-[#EBE7DD] p-2 text-[#213B2F] border border-[#DFD9CC]">
               <FileCheck className="h-5 w-5 text-[#C87D20]" />
@@ -158,8 +188,8 @@ export function AddListingModal({
           </button>
         </div>
 
-        {/* URL Input & Instant Scraper */}
-        <div className="mt-5 space-y-4">
+        {/* Scrollable Body with margin to prevent scrollbar from bleeding into rounded corners */}
+        <div className="flex-1 overflow-y-auto px-6 py-6 sm:px-8 my-2 space-y-4">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-[#67726A]">
               Collez l&apos;URL de l&apos;annonce (Agriaffaires ou Leboncoin) *
@@ -173,7 +203,8 @@ export function AddListingModal({
                   type="url"
                   placeholder="https://www.agriaffaires.com/... ou https://www.leboncoin.fr/..."
                   value={url}
-                  onChange={(e) => setUrl(e.target.value)}
+                  onChange={(e) => handleUrlChange(e.target.value)}
+                  onPaste={handleUrlPaste}
                   className="w-full rounded-xl border border-[#DFD9CC] bg-white pl-9 pr-3 py-2.5 text-sm text-[#1E2721] placeholder-[#9BA59E] focus:border-[#213B2F] focus:outline-none"
                 />
               </div>

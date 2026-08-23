@@ -1,4 +1,5 @@
 import { ScrapedListingData } from "@/types";
+import { extractUrl } from "@/lib/utils";
 
 export interface ScrapeResult {
   success: boolean;
@@ -38,7 +39,10 @@ export async function scrapeListing(rawUrl: string): Promise<ScrapeResult> {
     return { success: false, error: "URL invalide ou manquante." };
   }
 
-  const url = rawUrl.trim();
+  const url = extractUrl(rawUrl);
+  if (!url) {
+    return { success: false, error: "URL invalide ou manquante." };
+  }
   const isLeboncoin = url.includes("leboncoin.fr");
   const isAgriaffaires =
     url.includes("agriaffaires.com") || url.includes("agriaffaires.fr");

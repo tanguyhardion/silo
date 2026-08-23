@@ -36,3 +36,25 @@ export function getTodayFormatted(): string {
     year: "numeric",
   });
 }
+
+/**
+ * Extracts and cleans a URL from an arbitrary text snippet (e.g. shared text like "Check out this offer (https://...)").
+ */
+export function extractUrl(input: string): string {
+  if (!input || typeof input !== "string") return "";
+
+  // 1. Look for explicit http/https URL
+  const httpMatch = input.match(/https?:\/\/[^\s)\]>"']+/i);
+  if (httpMatch) {
+    return httpMatch[0].replace(/[.,;:!?)\]>"']+$/, "");
+  }
+
+  // 2. Look for www. URLs
+  const wwwMatch = input.match(/\bwww\.[^\s)\]>"']+/i);
+  if (wwwMatch) {
+    return `https://${wwwMatch[0].replace(/[.,;:!?)\]>"']+$/, "")}`;
+  }
+
+  return input.trim();
+}
+
