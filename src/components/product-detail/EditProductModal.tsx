@@ -1,16 +1,14 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Product, ProductType } from "@/types";
 import {
   AlertCircle,
   Pencil,
-  Upload,
-  Link2,
-  Trash2,
   X,
   Check,
 } from "lucide-react";
+import { ProductImagePicker } from "@/components/ProductImagePicker";
 
 interface EditProductModalProps {
   product: Product;
@@ -53,15 +51,9 @@ export function EditProductModal({
     product.status || "active"
   );
 
-  const [imageInputMode, setImageInputMode] = useState<"upload" | "url">(
-    product.mainImageUrl?.startsWith("data:") || !product.mainImageUrl
-      ? "upload"
-      : "url"
-  );
   const [mainImageUrl, setMainImageUrl] = useState(product.mainImageUrl || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -72,11 +64,6 @@ export function EditProductModal({
       setDescription(product.description || "");
       setStatus(product.status || "active");
       setMainImageUrl(product.mainImageUrl || "");
-      setImageInputMode(
-        product.mainImageUrl?.startsWith("data:") || !product.mainImageUrl
-          ? "upload"
-          : "url"
-      );
       setError(null);
     }
   }, [isOpen, product]);
@@ -121,22 +108,6 @@ export function EditProductModal({
       setError((err as Error).message);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setError("L'image ne doit pas dépasser 5 Mo.");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setMainImageUrl(event.target?.result as string);
-        setError(null);
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -255,104 +226,15 @@ export function EditProductModal({
             </select>
           </div>
 
-          {/* Photo Input (Upload or URL) */}
-          <div className="space-y-3 pt-2">
-            <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold uppercase tracking-wider text-[#67726A]">
-                Photo principale du matériel
-              </label>
-              <div className="flex rounded-lg bg-[#EBE7DD] p-0.5 border border-[#DFD9CC]">
-                <button
-                  type="button"
-                  onClick={() => setImageInputMode("upload")}
-                  className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-bold transition-all ${
-                    imageInputMode === "upload"
-                      ? "bg-[#FCFBF8] text-[#213B2F] shadow-2xs"
-                      : "text-[#67726A] hover:text-[#1E2721]"
-                  }`}
-                >
-                  <Upload className="h-3 w-3" />
-                  <span>Importer un fichier</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setImageInputMode("url")}
-                  className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-bold transition-all ${
-                    imageInputMode === "url"
-                      ? "bg-[#FCFBF8] text-[#213B2F] shadow-2xs"
-                      : "text-[#67726A] hover:text-[#1E2721]"
-                  }`}
-                >
-                  <Link2 className="h-3 w-3" />
-                  <span>Lien URL</span>
-                </button>
-              </div>
-            </div>
-
-            {imageInputMode === "upload" ? (
-              <div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#DFD9CC] bg-[#F7F5F0] p-4.5 hover:border-[#213B2F] hover:bg-[#EBE7DD]/60 transition-all text-center"
-                >
-                  <Upload className="h-5 w-5 text-[#C87D20]" />
-                  <p className="mt-1.5 text-xs font-bold text-[#1E2721]">
-                    Cliquez pour choisir une photo depuis votre appareil
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-[#67726A]">
-                    PNG, JPG, WebP jusqu&apos;à 5 Mo
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <input
-                type="url"
-                placeholder="https://images.unsplash.com/..."
-                value={mainImageUrl.startsWith("data:") ? "" : mainImageUrl}
-                onChange={(e) => setMainImageUrl(e.target.value)}
-                className="w-full rounded-xl border border-[#DFD9CC] bg-white px-3.5 py-2.5 text-sm text-[#1E2721] placeholder-[#9BA59E] focus:border-[#213B2F] focus:outline-none"
-              />
-            )}
-
-            {/* Preview of chosen image */}
-            {mainImageUrl && (
-              <div className="relative rounded-2xl border border-[#DFD9CC] bg-[#F7F5F0] p-3 flex items-center gap-3">
-                <div className="h-16 w-24 shrink-0 overflow-hidden rounded-xl bg-[#EAE6DC] border border-[#DFD9CC]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={mainImageUrl}
-                    alt="Aperçu"
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-xs font-bold text-[#1E2721] block truncate">
-                    Photo sélectionnée
-                  </span>
-                  <span className="text-[11px] text-[#67726A]">
-                    {mainImageUrl.startsWith("data:") ? "Fichier importé" : "Lien Web"}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMainImageUrl("");
-                    if (fileInputRef.current) fileInputRef.current.value = "";
-                  }}
-                  className="rounded-xl border border-[#DFD9CC] p-2 text-[#C87D20] hover:bg-[#EBE7DD] hover:text-red-600 transition-colors"
-                  title="Supprimer la photo"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            )}
+          {/* Photo Input (Web Suggestions, Upload, or URL) */}
+          <div className="pt-2">
+            <ProductImagePicker
+              value={mainImageUrl}
+              onChange={setMainImageUrl}
+              queryHint={name}
+              label="Photo principale du matériel"
+              onError={setError}
+            />
           </div>
 
           {/* Actions */}
@@ -378,3 +260,4 @@ export function EditProductModal({
     </div>
   );
 }
+
