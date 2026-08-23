@@ -63,8 +63,8 @@ export function StatsCards({
           <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider sm:tracking-widest text-[#67726A] truncate">
             Preuves Marché
           </span>
-          <div className="rounded-lg sm:rounded-xl bg-[#F6EFE2] p-1.5 sm:p-2 text-[#995E15] border border-[#E9DCBF] shrink-0">
-            <BookmarkCheck className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5 text-[#C87D20]" />
+          <div className="rounded-lg sm:rounded-xl bg-[#EBE7DD] p-1.5 sm:p-2 text-[#213B2F] border border-[#DFD9CC] shrink-0">
+            <BookmarkCheck className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5 text-[#213B2F]" />
           </div>
         </div>
         <div className="mt-1.5 sm:mt-3">

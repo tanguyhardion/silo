@@ -28,7 +28,7 @@ export function ProductTabs({
               : "border-transparent text-[#67726A] hover:text-[#1E2721]"
           }`}
         >
-          <FileCheck className="h-4 w-4 text-[#C87D20]" />
+          <FileCheck className="h-4 w-4" />
           <span>Annonces & Preuves ({listingsCount})</span>
         </button>
 
