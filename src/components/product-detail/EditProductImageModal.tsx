@@ -64,9 +64,9 @@ export function EditProductImageModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-xs animate-in fade-in">
-      <div className="relative w-full max-w-lg rounded-3xl bg-[#FCFBF8] p-6 shadow-2xl border border-[#DFD9CC] sm:p-8">
-        <div className="flex items-center justify-between border-b border-[#DFD9CC] pb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in">
+      <div className="relative w-full max-w-lg max-h-[90vh] flex flex-col rounded-3xl bg-[#FCFBF8] shadow-2xl border border-[#DFD9CC] overflow-hidden">
+        <div className="flex items-center justify-between border-b border-[#DFD9CC] px-6 py-5 sm:px-8 shrink-0 bg-[#FCFBF8]">
           <div className="flex items-center gap-3">
             <div className="rounded-xl bg-[#EBE7DD] p-2 text-[#213B2F] border border-[#DFD9CC]">
               <ImageIcon className="h-5 w-5 text-[#C87D20]" />
@@ -86,7 +86,7 @@ export function EditProductImageModal({
           </button>
         </div>
 
-        <form onSubmit={handleSaveImage} className="mt-6 space-y-4">
+        <form onSubmit={handleSaveImage} className="flex-1 overflow-y-auto px-6 py-6 sm:px-8 my-2 space-y-4">
           {imageError && (
             <div className="flex items-center gap-2 rounded-xl bg-red-50 p-3 text-xs text-red-700 border border-red-200">
               <AlertCircle className="h-4 w-4 shrink-0" />
