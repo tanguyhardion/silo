@@ -126,10 +126,37 @@ function parseLeboncoin(url: string, html: string): ScrapeResult {
 
   // Specs — extract attributes (mileage, hours, year, fuel, gearbox, etc.)
   const specs: Record<string, string> = {};
+  const ignoredSpecKeys = new Set([
+    "profile_picture_url",
+    "profile_picture",
+    "avatar",
+    "photo",
+    "photos",
+    "image",
+    "images",
+  ]);
+
   if (Array.isArray(ad.attributes)) {
     for (const attr of ad.attributes) {
+      const rawKey = (attr.key || "").toLowerCase();
+      const rawKeyLabel = (attr.key_label || "").toLowerCase();
+      
+      // Skip ignored attributes like profile picture URLs, image URLs, etc.
+      if (
+        ignoredSpecKeys.has(rawKey) ||
+        ignoredSpecKeys.has(rawKeyLabel) ||
+        rawKey.includes("profile_picture") ||
+        rawKey.includes("picture_url")
+      ) {
+        continue;
+      }
+
+      let label = "";
+      let valStr = "";
+
       if (attr.key_label && attr.value_label) {
-        specs[attr.key_label as string] = attr.value_label as string;
+        label = attr.key_label as string;
+        valStr = String(attr.value_label);
       } else if (attr.key && attr.value) {
         const keyMap: Record<string, string> = {
           mileage: "Kilométrage",
@@ -144,8 +171,13 @@ function parseLeboncoin(url: string, html: string): ScrapeResult {
           hours: "Heures",
           cylinder: "Cylindrée",
         };
-        const label = keyMap[attr.key] || attr.key;
-        specs[label] = String(attr.value_label || attr.value);
+        label = keyMap[attr.key] || attr.key;
+        valStr = String(attr.value_label || attr.value);
+      }
+
+      // Do not include if value is an http/https URL or if label is ignored
+      if (label && valStr && !valStr.startsWith("http://") && !valStr.startsWith("https://")) {
+        specs[label] = valStr;
       }
     }
   }

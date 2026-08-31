@@ -242,15 +242,27 @@ export function AddListingModal({
               </div>
               {scrapedData?.specs && Object.keys(scrapedData.specs).length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  {Object.entries(scrapedData.specs).map(([key, val]) => (
-                    <span
-                      key={key}
-                      className="inline-flex items-center gap-1 rounded-md bg-white/80 border border-[#3D7A5D]/20 px-2 py-0.5 text-[11px] font-medium text-[#213B2F]"
-                    >
-                      <span className="text-[#67726A]">{key}:</span>
-                      <strong>{String(val)}</strong>
-                    </span>
-                  ))}
+                  {Object.entries(scrapedData.specs).map(([key, val]) => {
+                    const strVal = String(val).trim();
+                    const lowerKey = key.toLowerCase();
+                    if (
+                      lowerKey.includes("profile_picture") ||
+                      lowerKey.includes("picture_url") ||
+                      strVal.startsWith("http://") ||
+                      strVal.startsWith("https://")
+                    ) {
+                      return null;
+                    }
+                    return (
+                      <span
+                        key={key}
+                        className="inline-flex items-center gap-1 rounded-md bg-white/80 border border-[#3D7A5D]/20 px-2 py-0.5 text-[11px] font-medium text-[#213B2F]"
+                      >
+                        <span className="text-[#67726A]">{key}:</span>
+                        <strong>{strVal}</strong>
+                      </span>
+                    );
+                  })}
                 </div>
               )}
             </div>

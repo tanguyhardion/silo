@@ -132,9 +132,12 @@ export function ProductListingsTab({
                   </div>
 
                   {/* Observed Date */}
-                  <span className="inline-flex items-center gap-1.5 rounded-md bg-[#F6EFE2] border border-[#E9DCBF] px-2.5 py-0.5 text-[11px] font-bold text-[#8C5413]">
-                    <Clock className="h-3 w-3 text-[#C87D20]" />
-                    <span>Observé le {listing.observedAt}</span>
+                  <span className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md bg-[#F6EFE2] border border-[#E9DCBF] px-2 sm:px-2.5 py-0.5 text-[11px] font-bold text-[#8C5413] shrink-0 whitespace-nowrap">
+                    <Clock className="h-3 w-3 text-[#C87D20] shrink-0" />
+                    <span>
+                      <span className="hidden sm:inline">Observé le </span>
+                      {listing.observedAt}
+                    </span>
                   </span>
                 </div>
 
@@ -174,13 +177,23 @@ export function ProductListingsTab({
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {Object.entries(listing.specs).map(([key, val]) => {
                         if (!val || (typeof val !== "string" && typeof val !== "number")) return null;
+                        const strVal = String(val).trim();
+                        const lowerKey = key.toLowerCase();
+                        if (
+                          lowerKey.includes("profile_picture") ||
+                          lowerKey.includes("picture_url") ||
+                          strVal.startsWith("http://") ||
+                          strVal.startsWith("https://")
+                        ) {
+                          return null;
+                        }
                         return (
                           <span
                             key={key}
                             className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium bg-[#EBE7DD]/80 border border-[#DFD9CC] text-[#3D4740]"
                           >
                             <span className="text-[#67726A]">{key} :</span>
-                            <span className="font-semibold text-[#1E2721]">{String(val)}</span>
+                            <span className="font-semibold text-[#1E2721]">{strVal}</span>
                           </span>
                         );
                       })}
