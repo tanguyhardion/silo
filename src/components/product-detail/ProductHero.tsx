@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Product } from "@/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Calendar, Pencil, Plus, Scale } from "lucide-react";
+import { Calendar, Pencil, Plus, Scale, ZoomIn } from "lucide-react";
+import { ImageLightbox } from "@/components/ImageLightbox";
 
 interface ProductHeroProps {
   product: Product;
@@ -19,36 +21,55 @@ export function ProductHero({
   onOpenValuationModal,
   onOpenListingModal,
 }: ProductHeroProps) {
-  return (
-    <div className="relative overflow-hidden rounded-3xl border border-[#DFD9CC] bg-[#FCFBF8] shadow-xs">
-      <div className="grid grid-cols-1 lg:grid-cols-12">
-        {/* Image Cover */}
-        <div className="group relative aspect-16/9 lg:aspect-auto lg:col-span-5 overflow-hidden bg-[#EAE6DC]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={
-              product.mainImageUrl ||
-              "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80"
-            }
-            alt={product.name}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-102"
-          />
-          <div className="absolute top-4 left-4">
-            <span className="rounded-lg bg-[#213B2F]/90 px-3 py-1 text-xs font-semibold text-[#F4F6F1] backdrop-blur-md border border-[#3D6652]/40">
-              {product.type}
-            </span>
-          </div>
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const heroImage =
+    product.mainImageUrl ||
+    "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80";
 
-          {/* Edit Product Action Button */}
-          <button
-            onClick={onOpenEditProduct}
-            title="Modifier le bien"
-            className="absolute bottom-4 right-4 inline-flex items-center gap-1.5 rounded-xl bg-[#FCFBF8]/95 px-3 py-2 text-xs font-bold text-[#1E2721] shadow-md backdrop-blur-md border border-[#DFD9CC] hover:bg-[#213B2F] hover:text-[#F4F6F1] transition-all"
+  return (
+    <>
+      <div className="relative overflow-hidden rounded-3xl border border-[#DFD9CC] bg-[#FCFBF8] shadow-xs">
+        <div className="grid grid-cols-1 lg:grid-cols-12">
+          {/* Image Cover */}
+          <div
+            onClick={() => setIsLightboxOpen(true)}
+            className="group relative aspect-16/9 lg:aspect-auto lg:col-span-5 overflow-hidden bg-[#EAE6DC] cursor-pointer"
+            title="Cliquer pour agrandir l'image"
           >
-            <Pencil className="h-4 w-4 text-[#C87D20]" />
-            <span>Modifier le bien</span>
-          </button>
-        </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={heroImage}
+              alt={product.name}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+
+            {/* Hover overlay hint */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-all pointer-events-none" />
+
+            {/* Discreet visible zoom icon */}
+            <div className="absolute top-4 right-4 rounded-lg bg-black/60 p-1.5 text-white shadow-xs backdrop-blur-2xs group-hover:bg-[#213B2F] transition-colors pointer-events-none">
+              <ZoomIn className="h-4 w-4 text-white/90 group-hover:text-white" />
+            </div>
+
+            <div className="absolute top-4 left-4">
+              <span className="rounded-lg bg-[#213B2F]/90 px-3 py-1 text-xs font-semibold text-[#F4F6F1] backdrop-blur-md border border-[#3D6652]/40">
+                {product.type}
+              </span>
+            </div>
+
+            {/* Edit Product Action Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenEditProduct();
+              }}
+              title="Modifier le bien"
+              className="absolute bottom-4 right-4 inline-flex items-center gap-1.5 rounded-xl bg-[#FCFBF8]/95 px-3 py-2 text-xs font-bold text-[#1E2721] shadow-md backdrop-blur-md border border-[#DFD9CC] hover:bg-[#213B2F] hover:text-[#F4F6F1] transition-all"
+            >
+              <Pencil className="h-4 w-4 text-[#C87D20]" />
+              <span>Modifier le bien</span>
+            </button>
+          </div>
 
         {/* Product Details & Actions */}
         <div className="flex flex-col justify-between p-6 sm:p-8 lg:col-span-7">
@@ -150,5 +171,13 @@ export function ProductHero({
         </div>
       </div>
     </div>
+
+      <ImageLightbox
+        images={[heroImage]}
+        isOpen={isLightboxOpen}
+        onClose={() => setIsLightboxOpen(false)}
+        title={product.name}
+      />
+    </>
   );
 }

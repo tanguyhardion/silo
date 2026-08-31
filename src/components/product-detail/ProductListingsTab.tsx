@@ -17,7 +17,9 @@ import {
   Loader2,
   FileText,
   Gauge,
+  ZoomIn,
 } from "lucide-react";
+import { ImageLightbox } from "@/components/ImageLightbox";
 
 interface ProductListingsTabProps {
   productId?: string;
@@ -36,6 +38,12 @@ export function ProductListingsTab({
   const [editingNote, setEditingNote] = useState<string>("");
   const [savingListingId, setSavingListingId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const [activeLightbox, setActiveLightbox] = useState<{
+    images: string[];
+    initialIndex: number;
+    title: string;
+  } | null>(null);
 
   const startEditing = (listing: Listing) => {
     setEditingListingId(listing.id);
@@ -301,20 +309,38 @@ export function ProductListingsTab({
 
                   {/* Photos */}
                   {listing.images && listing.images.length > 0 && (
-                    <div className="mt-3.5 flex gap-2 overflow-x-auto pb-1">
-                      {listing.images.map((img, idx) => (
-                        <div
-                          key={idx}
-                          className="h-14 w-20 shrink-0 rounded-lg overflow-hidden border border-[#DFD9CC]"
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={img}
-                            alt="Preuve"
-                            className="h-full w-full object-cover"
-                          />
-                        </div>
-                      ))}
+                    <div className="mt-3.5">
+                      <span className="text-[11px] font-semibold text-[#67726A] block mb-1.5">
+                        Photos archivées ({listing.images.length})
+                      </span>
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {listing.images.map((img, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() =>
+                              setActiveLightbox({
+                                images: listing.images || [],
+                                initialIndex: idx,
+                                title: `${listing.title} (${idx + 1}/${listing.images?.length})`,
+                              })
+                            }
+                            title="Agrandir l'image"
+                            className="group/img relative h-14 w-20 shrink-0 rounded-lg overflow-hidden border border-[#DFD9CC] hover:border-[#213B2F] focus:outline-none focus:ring-2 focus:ring-[#213B2F]/20 transition-all text-left"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={img}
+                              alt="Preuve"
+                              className="h-full w-full object-cover transition-transform duration-300 group-hover/img:scale-110"
+                            />
+                            {/* Discreet visible zoom icon */}
+                            <div className="absolute top-1 right-1 rounded-md bg-black/60 p-1 text-white shadow-xs backdrop-blur-2xs group-hover/img:bg-[#213B2F] transition-colors">
+                              <ZoomIn className="h-3 w-3 text-white/90 group-hover/img:text-white" />
+                            </div>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -353,6 +379,15 @@ export function ProductListingsTab({
           </button>
         </div>
       )}
+
+      {/* Lightbox modal for full size preview */}
+      <ImageLightbox
+        images={activeLightbox?.images || []}
+        initialIndex={activeLightbox?.initialIndex || 0}
+        isOpen={!!activeLightbox}
+        onClose={() => setActiveLightbox(null)}
+        title={activeLightbox?.title}
+      />
     </div>
   );
 }
