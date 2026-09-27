@@ -140,7 +140,8 @@ export function AddListingModal({
           priceTtc: parseFloat(priceTtc) || null,
           currency: "EUR",
           sellerName: sellerName.trim() || null,
-          sellerType: source === "agriaffaires" ? "pro" : "particulier",
+          sellerType:
+            scrapedData?.sellerType ?? (source === "agriaffaires" ? "pro" : "particulier"),
           location: location.trim() || null,
           publishedDate: publishedDate.trim() || null,
           observedAt: observedAt.trim() || getTodayFormatted(),

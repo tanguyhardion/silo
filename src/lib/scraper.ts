@@ -201,7 +201,7 @@ function parseLeboncoin(url: string, html: string): ScrapeResult {
     ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ad.attributes.map((a: any) => `${a.key_label ?? a.key ?? ""} ${a.value_label ?? a.value ?? ""}`).join("\n")
     : "";
-  const vat = resolveVatPrices(rawPrice, [attrText, ad.body ?? "", stripTags(html)]);
+  const vat = resolveVatPrices(rawPrice, [attrText, ad.body ?? "", stripTags(html)], specs);
 
   return {
     success: true,
@@ -405,14 +405,24 @@ function findTaggedAmounts(text: string, tag: "HT" | "TTC"): number[] {
 
 const near = (a: number, b: number) => Math.abs(a - b) <= Math.max(1, b * 0.01);
 
+// Structured fields such as Leboncoin's "Prix de vente HT : 3500" (no currency sign)
+function findTaggedSpecs(specs: Record<string, string>, tag: "HT" | "TTC"): number[] {
+  const label = tag === "HT" ? /\bH\.?T\.?\b|hors[\s-]+taxes?/i : /\bT\.?T\.?C\.?\b/i;
+  return Object.entries(specs)
+    .filter(([key]) => /prix|price|montant/i.test(key) && label.test(key))
+    .map(([, value]) => parseAmount(value.replace(/[^\d\s.,]/g, "").trim()))
+    .filter((n) => n > 0);
+}
+
 export function resolveVatPrices(
   price: number,
-  texts: string[]
+  texts: string[],
+  specs: Record<string, string> = {}
 ): { price: number; priceTtc: number | null } {
   if (!price) return { price, priceTtc: null };
   const text = texts.join("\n");
-  const ht = findTaggedAmounts(text, "HT");
-  const ttc = findTaggedAmounts(text, "TTC");
+  const ht = [...findTaggedSpecs(specs, "HT"), ...findTaggedAmounts(text, "HT")];
+  const ttc = [...findTaggedSpecs(specs, "TTC"), ...findTaggedAmounts(text, "TTC")];
   const htOfPrice = ht.find((n) => n < price && near(n * (1 + VAT_RATE), price));
 
   // Displayed price explicitly labelled TTC
@@ -432,6 +442,10 @@ export function resolveVatPrices(
 
   // An HT amount of ~price/1.2 is stated → displayed price was TTC
   if (htOfPrice) return { price: htOfPrice, priceTtc: price };
+
+  // An explicit HT field below the displayed price wins even off the 20% ratio
+  const specHt = findTaggedSpecs(specs, "HT").find((n) => n < price);
+  if (specHt) return { price: specHt, priceTtc: price };
 
   // Nothing specified → HT
   return { price, priceTtc: null };

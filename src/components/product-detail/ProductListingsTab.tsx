@@ -196,6 +196,8 @@ export function ProductListingsTab({
                         if (
                           lowerKey.includes("profile_picture") ||
                           lowerKey.includes("picture_url") ||
+                          // Prices are already shown above (HT / TTC)
+                          /\bprix\b|price/.test(lowerKey) ||
                           strVal.startsWith("http://") ||
                           strVal.startsWith("https://")
                         ) {
