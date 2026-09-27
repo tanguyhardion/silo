@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/require-auth";
 
 export interface ImageSuggestion {
   title: string;
@@ -116,6 +117,9 @@ async function fetchWikimediaImages(query: string): Promise<ImageSuggestion[]> {
 }
 
 export async function GET(request: Request) {
+  const denied = await requireAuth();
+  if (denied) return denied;
+
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q")?.trim();
 

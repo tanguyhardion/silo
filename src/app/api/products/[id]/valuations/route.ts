@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/require-auth";
 import { dbService } from "@/lib/db-service";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const denied = await requireAuth();
+  if (denied) return denied;
+
   try {
     const { id } = await params;
     const valuations = await dbService.getValuationsByProduct(id);
@@ -18,6 +22,9 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const denied = await requireAuth();
+  if (denied) return denied;
+
   try {
     const { id } = await params;
     const body = await request.json();

@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/require-auth";
 import { dbService } from "@/lib/db-service";
 
 export async function GET() {
+  const denied = await requireAuth();
+  if (denied) return denied;
+
   try {
     const products = await dbService.getProducts();
     return NextResponse.json({ success: true, products });
@@ -11,6 +15,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const denied = await requireAuth();
+  if (denied) return denied;
+
   try {
     const body = await request.json();
     if (!body.name || !body.type) {

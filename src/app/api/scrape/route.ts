@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/require-auth";
 import { scrapeListing } from "@/lib/scraper";
 
 export async function POST(request: Request) {
+  const denied = await requireAuth();
+  if (denied) return denied;
+
   try {
     const body = await request.json();
     const { url } = body;
