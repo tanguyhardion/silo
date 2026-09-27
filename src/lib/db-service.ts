@@ -363,6 +363,7 @@ export const dbService = {
         url: l.url,
         title: l.title,
         price: parseFloat(l.price),
+        priceTtc: l.priceTtc ? parseFloat(l.priceTtc) : null,
         currency: l.currency,
         sellerName: l.sellerName,
         sellerType: (l.sellerType as "particulier" | "pro") || null,
@@ -398,6 +399,7 @@ export const dbService = {
         url: data.url,
         title: data.title,
         price: data.price.toString(),
+        priceTtc: data.priceTtc != null ? data.priceTtc.toString() : null,
         currency: data.currency || "EUR",
         sellerName: data.sellerName || null,
         sellerType: data.sellerType || null,
@@ -416,7 +418,7 @@ export const dbService = {
         id: `log-${Date.now()}`,
         productId,
         actionType: "LISTING_ADDED",
-        description: `Ajout de la preuve ${data.source.toUpperCase()} : "${data.title}" (${data.price.toLocaleString("fr-FR")} €)`,
+        description: `Ajout de la preuve ${data.source.toUpperCase()} : "${data.title}" (${data.price.toLocaleString("fr-FR")} € HT)`,
         metadata: JSON.stringify({ source: data.source, price: data.price }),
         actor: "Utilisateur Silo",
         createdAt: now,
@@ -444,7 +446,7 @@ export const dbService = {
       id: `log-${Date.now()}`,
       productId,
       actionType: "LISTING_ADDED",
-      description: `Ajout de la preuve ${data.source.toUpperCase()} : "${data.title}" (${data.price.toLocaleString("fr-FR")} €)`,
+      description: `Ajout de la preuve ${data.source.toUpperCase()} : "${data.title}" (${data.price.toLocaleString("fr-FR")} € HT)`,
       actor: "Utilisateur Silo",
       createdAt: now.toISOString(),
     });
@@ -463,6 +465,7 @@ export const dbService = {
       if (updates.notes !== undefined) setObj.notes = updates.notes;
       if (updates.title !== undefined) setObj.title = updates.title;
       if (updates.price !== undefined) setObj.price = updates.price.toString();
+      if (updates.priceTtc !== undefined) setObj.priceTtc = updates.priceTtc != null ? updates.priceTtc.toString() : null;
       if (updates.sellerName !== undefined) setObj.sellerName = updates.sellerName;
       if (updates.location !== undefined) setObj.location = updates.location;
       if (updates.publishedDate !== undefined) setObj.publishedDate = updates.publishedDate;

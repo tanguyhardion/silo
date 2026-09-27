@@ -202,7 +202,7 @@ export function NewProductModal({ isOpen, onClose, onSuccess }: NewProductModalP
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-[#67726A]">
-                  Valeur estimée (€)
+                  Valeur estimée HT (€)
                 </label>
                 <div className="relative mt-1.5">
                   <input

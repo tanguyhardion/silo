@@ -196,13 +196,20 @@ function parseLeboncoin(url: string, html: string): ScrapeResult {
     null;
   const publishedDate = formatPubDate(rawPubDate) || new Date().toLocaleDateString("fr-FR");
 
+  // VAT mentions can live in attributes (pro ads), the description or the rendered page
+  const attrText = Array.isArray(ad.attributes)
+    ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ad.attributes.map((a: any) => `${a.key_label ?? a.key ?? ""} ${a.value_label ?? a.value ?? ""}`).join("\n")
+    : "";
+  const vat = resolveVatPrices(rawPrice, [attrText, ad.body ?? "", stripTags(html)]);
+
   return {
     success: true,
     data: {
       source: "leboncoin",
       url,
       title: ad.subject ?? "Annonce Leboncoin",
-      price: rawPrice,
+      ...vat,
       currency: "EUR",
       sellerName: ownerName || "Vendeur Leboncoin",
       sellerType,
@@ -257,6 +264,11 @@ function parseAgriaffaires(url: string, html: string): ScrapeResult {
             extractMeta(html, "og:article:published_time") ||
             extractDateFromHtml(html);
 
+          const vat = resolveVatPrices(price, [
+            product.description ?? "",
+            stripTags(html),
+          ]);
+
           return {
             success: true,
             data: {
@@ -267,7 +279,7 @@ function parseAgriaffaires(url: string, html: string): ScrapeResult {
                   extractMeta(html, "og:title") ??
                   "Annonce Agriaffaires"
               ),
-              price,
+              ...vat,
               currency: product.offers?.priceCurrency ?? "EUR",
               sellerName,
               sellerType: "pro",
@@ -342,7 +354,7 @@ function parseGenericOg(
       source,
       url,
       title: cleanTitle(ogTitle) || "Annonce web",
-      price,
+      ...resolveVatPrices(price, [ogTitle, ogDesc, stripTags(html)]),
       currency: "EUR",
       sellerName: extractMeta(html, "author") ?? "Vendeur",
       sellerType: source === "agriaffaires" ? "pro" : "particulier",
@@ -353,6 +365,86 @@ function parseGenericOg(
       publishedDate: formatPubDate(rawDate) || new Date().toLocaleDateString("fr-FR"),
     },
   };
+}
+
+// ---------------------------------------------------------------------------
+// VAT — prices are assumed HT unless the listing states otherwise
+// ---------------------------------------------------------------------------
+const VAT_RATE = 0.2;
+
+function parseAmount(raw: string): number {
+  // "45 000,50" / "45.000" / "45000" → number
+  const cleaned = raw.replace(/[\s  ]/g, "");
+  const normalized = /,\d{1,2}$/.test(cleaned)
+    ? cleaned.replace(/\./g, "").replace(",", ".")
+    : cleaned.replace(/[.,]/g, "");
+  return parseFloat(normalized) || 0;
+}
+
+function findTaggedAmounts(text: string, tag: "HT" | "TTC"): number[] {
+  const label =
+    tag === "HT"
+      ? String.raw`(?:H\.?T\.?|hors[\s-]+taxes?)`
+      : String.raw`(?:T\.?T\.?C\.?|toutes[\s-]+taxes[\s-]+comprises)`;
+  const num = String.raw`(\d{1,3}(?:[\s  .]\d{3})+(?:,\d{1,2})?|\d{3,}(?:,\d{1,2})?)`;
+  const patterns = [
+    // "45 000 € HT"
+    new RegExp(String.raw`${num}\s*(?:€|euros?|EUR)\s*${label}(?![a-z])`, "gi"),
+    // "Prix HT : 45 000 €"
+    new RegExp(String.raw`\b${label}\s*:?\s*${num}\s*(?:€|euros?|EUR)`, "gi"),
+  ];
+  const amounts: number[] = [];
+  for (const re of patterns) {
+    for (const m of text.matchAll(re)) {
+      const n = parseAmount(m[1]);
+      if (n > 0) amounts.push(n);
+    }
+  }
+  return amounts;
+}
+
+const near = (a: number, b: number) => Math.abs(a - b) <= Math.max(1, b * 0.01);
+
+export function resolveVatPrices(
+  price: number,
+  texts: string[]
+): { price: number; priceTtc: number | null } {
+  if (!price) return { price, priceTtc: null };
+  const text = texts.join("\n");
+  const ht = findTaggedAmounts(text, "HT");
+  const ttc = findTaggedAmounts(text, "TTC");
+  const htOfPrice = ht.find((n) => n < price && near(n * (1 + VAT_RATE), price));
+
+  // Displayed price explicitly labelled TTC
+  const priceIsTtc =
+    ttc.some((n) => near(n, price)) ||
+    (/prix[^.\n]{0,20}\bTTC\b/i.test(text) && !ht.some((n) => near(n, price)));
+  if (priceIsTtc) {
+    return {
+      price: htOfPrice ?? Math.round(price / (1 + VAT_RATE)),
+      priceTtc: price,
+    };
+  }
+
+  // Displayed price is HT; keep the TTC amount if one is also stated
+  const ttcMatch = ttc.find((n) => n > price && near(n, price * (1 + VAT_RATE)));
+  if (ttcMatch) return { price, priceTtc: ttcMatch };
+
+  // An HT amount of ~price/1.2 is stated → displayed price was TTC
+  if (htOfPrice) return { price: htOfPrice, priceTtc: price };
+
+  // Nothing specified → HT
+  return { price, priceTtc: null };
+}
+
+function stripTags(html: string): string {
+  return decodeHtmlEntities(
+    html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/g, " ")
+  );
 }
 
 // ---------------------------------------------------------------------------

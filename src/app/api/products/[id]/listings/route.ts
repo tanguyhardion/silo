@@ -30,6 +30,7 @@ export async function POST(
       url: body.url,
       title: body.title,
       price: parseFloat(body.price || "0") || 0,
+      priceTtc: parseFloat(body.priceTtc) || null,
       currency: body.currency || "EUR",
       sellerName: body.sellerName || null,
       sellerType: body.sellerType || null,

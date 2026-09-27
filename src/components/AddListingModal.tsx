@@ -33,6 +33,7 @@ export function AddListingModal({
   const [source, setSource] = useState<"leboncoin" | "agriaffaires" | "autre">("agriaffaires");
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
+  const [priceTtc, setPriceTtc] = useState("");
   const [sellerName, setSellerName] = useState("");
   const [location, setLocation] = useState("");
   const [publishedDate, setPublishedDate] = useState("");
@@ -102,6 +103,7 @@ export function AddListingModal({
       setSource(info.source);
       setTitle(info.title || "");
       if (info.price && info.price > 0) setPrice(info.price.toString());
+      setPriceTtc(info.priceTtc ? info.priceTtc.toString() : "");
       setSellerName(info.sellerName || "");
       setLocation(info.location || "");
       setPublishedDate(info.publishedDate || getTodayFormatted());
@@ -135,6 +137,7 @@ export function AddListingModal({
           url: cleanUrl,
           title: title.trim(),
           price: parseFloat(price) || 0,
+          priceTtc: parseFloat(priceTtc) || null,
           currency: "EUR",
           sellerName: sellerName.trim() || null,
           sellerType: source === "agriaffaires" ? "pro" : "particulier",
@@ -296,7 +299,7 @@ export function AddListingModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-[#67726A]">
-                  Prix observé (€) *
+                  Prix observé HT (€) *
                 </label>
                 <div className="relative mt-1.5">
                   <input
@@ -310,6 +313,19 @@ export function AddListingModal({
                   />
                   <span className="absolute right-3.5 top-3 text-xs font-bold text-[#67726A]">
                     €
+                  </span>
+                </div>
+                <div className="relative mt-2">
+                  <input
+                    type="number"
+                    step="50"
+                    placeholder="Prix TTC si indiqué"
+                    value={priceTtc}
+                    onChange={(e) => setPriceTtc(e.target.value)}
+                    className="w-full rounded-xl border border-[#DFD9CC] bg-white px-3.5 py-2 pr-14 text-sm text-[#1E2721] focus:border-[#213B2F] focus:outline-none"
+                  />
+                  <span className="absolute right-3.5 top-2.5 text-xs font-bold text-[#67726A]">
+                    € TTC
                   </span>
                 </div>
               </div>

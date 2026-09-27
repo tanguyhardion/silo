@@ -78,6 +78,7 @@ export function ProductCard({ product }: ProductCardProps) {
               </span>
               <div className="text-xl font-black tracking-tight text-[#213B2F]">
                 {formatCurrency(product.currentEstimatedValue, product.currency)}
+                <span className="ml-1 text-[0.55em] font-bold text-[#99A39D]">HT</span>
               </div>
             </div>
 

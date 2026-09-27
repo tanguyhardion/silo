@@ -30,7 +30,8 @@ export const listings = pgTable("listings", {
   source: text("source").notNull(), // 'leboncoin' | 'agriaffaires' | 'autre'
   url: text("url").notNull(),
   title: text("title").notNull(),
-  price: numeric("price", { precision: 12, scale: 2 }).notNull(),
+  price: numeric("price", { precision: 12, scale: 2 }).notNull(), // HT
+  priceTtc: numeric("price_ttc", { precision: 12, scale: 2 }), // only when the listing states VAT
   currency: text("currency").notNull().default("EUR"),
   sellerName: text("seller_name"),
   sellerType: text("seller_type"),

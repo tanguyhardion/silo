@@ -125,6 +125,7 @@ export function ProductHero({
                     {product.currentEstimatedValue
                       ? formatCurrency(product.currentEstimatedValue, product.currency)
                       : "- €"}
+                    <span className="ml-1 text-[0.55em] font-bold text-[#99A39D]">HT</span>
                   </span>
                 </div>
                 <div className="mt-1 flex items-center gap-1.5 text-xs text-[#67726A]">
@@ -164,6 +165,7 @@ export function ProductHero({
                 </span>
                 <span className="text-base font-bold text-[#1E2721]">
                   {formatCurrency(avgListingPrice)}
+                  <span className="ml-1 text-[0.55em] font-bold text-[#99A39D]">HT</span>
                 </span>
               </div>
             )}

@@ -54,6 +54,7 @@ export function ProductValuationsTab({
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-base font-extrabold text-[#213B2F]">
                     {formatCurrency(val.value)}
+                    <span className="ml-1 text-[0.55em] font-bold text-[#99A39D]">HT</span>
                   </td>
                   <td className="px-6 py-4 text-[#505A53] max-w-xs sm:max-w-md leading-relaxed">
                     {val.notes || <span className="italic text-[#99A39D]">Aucune note</span>}

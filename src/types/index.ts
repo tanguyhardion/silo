@@ -52,7 +52,8 @@ export interface Listing {
   source: "leboncoin" | "agriaffaires" | "autre";
   url: string;
   title: string;
-  price: number; // in Euros
+  price: number; // in Euros, HT (assumed HT when the listing does not say)
+  priceTtc?: number | null; // set only when the listing states VAT
   currency: string;
   sellerName?: string | null;
   sellerType?: "particulier" | "pro" | string | null;
@@ -88,7 +89,8 @@ export interface ScrapedListingData {
   source: "leboncoin" | "agriaffaires" | "autre";
   url: string;
   title: string;
-  price: number;
+  price: number; // HT
+  priceTtc?: number | null;
   currency: string;
   sellerName?: string;
   sellerType?: "particulier" | "pro" | string;

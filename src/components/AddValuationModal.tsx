@@ -104,7 +104,7 @@ export function AddValuationModal({
           {/* Value (€) */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-[#67726A]">
-              Valeur estimée (€) *
+              Valeur estimée HT (€) *
             </label>
             <div className="relative mt-1.5">
               <input

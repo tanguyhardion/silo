@@ -156,7 +156,13 @@ export function ProductListingsTab({
                   </h4>
                   <div className="mt-1.5 text-2xl font-black text-[#213B2F]">
                     {formatCurrency(listing.price, listing.currency)}
+                    <span className="ml-1 text-[0.55em] font-bold text-[#99A39D]">HT</span>
                   </div>
+                  {listing.priceTtc != null && (
+                    <div className="text-xs font-semibold text-[#67726A]">
+                      {formatCurrency(listing.priceTtc, listing.currency)} TTC
+                    </div>
+                  )}
 
                   {/* Location & Seller */}
                   <div className="mt-2 space-y-1 text-xs text-[#67726A]">

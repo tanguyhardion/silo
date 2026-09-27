@@ -30,6 +30,7 @@ export function StatsCards({
         <div className="mt-1.5 sm:mt-3">
           <div className="text-lg sm:text-3xl font-extrabold tracking-tight text-[#1E2721] truncate">
             {formatCurrency(totalEstimatedValue)}
+            <span className="ml-1 text-[0.55em] font-bold text-[#99A39D]">HT</span>
           </div>
           <p className="mt-0.5 sm:mt-1 text-[10.5px] sm:text-xs text-[#67726A] line-clamp-1">
             Cote consolidée des actifs
